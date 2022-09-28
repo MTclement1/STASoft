@@ -9,12 +9,15 @@ import time
 # TODO
 # automatic choice of particle per CPU, to do with optional arguments
 # Graphical interface
-# fix when file are not found
+# fix when file are not found (for example in splitIntoseg with the model pts added)
 # Better PRM modification ==> DONE, need to be tested
 # Possibly using shutil.which and replace all command with their direct path
 # Allow for optional arguments as a way to modify the file
 # Prepare unit testing file https://pymbook.readthedocs.io/en/latest/testing.html
-
+# Alternatively, shell=False can be used when command is used as a list with arguments (see docu). Might help on W10
+# Use subprocess.call in lancer prm parser and chunk to prevent starting chunk before parser has finished.
+# popen.wait maybe can be useful too. exit_codes = [p.wait() for p in p1, p2] for multiple processes. Note that
+# according to the python documentation subprocess.run waits for the process to end
 # Get all information for prm file
 # Cylinder height, mask radius volume of average all depends on the pixel size of the tomogram
 
@@ -154,12 +157,12 @@ numberOfSearch = len(refLines[33].split(","))
 pixelSpacing, pathToTomo = determinePixelSpacing(refLines)
 # First create all prm files then start the averaging
 
-for i in range(1, numberOfSegment + 1):
+for i in range(1, numbOfSegment + 1):
     newFile = modifierPrm(refLines, baseNameFile, i, numberOfParticle, numberOfSearch, pixelSpacing, pathToTomo)
     createNewPrm(baseNameFile, i, newFile)
 
 allProcs = []
-for i in range(1, numberOfSegment + 1):
+for i in range(1, numbOfSegment + 1):
     lancerParserSegment(baseNameFile, i)
     # ProcessChunk will not start until parser has finished
     allProcs = lancerProcessChunkSegment(baseNameFile, i, allProcs)
@@ -171,8 +174,8 @@ print("All segments have been generated")
 
 showSurface = int(input("Would you like to see all isosurface ? 1 for yes 2 for no\n"))
 if showSurface == 1:
-    for i in range(1, numberOfSegment + 1):
-        avgPath = glob.glob("./segment{num}/{name}_S{num}_AvgVol_*.mrc".format(num=i, name=baseName))[0]
+    for i in range(1, numbOfSegment + 1):
+        avgPath = glob.glob("./segment{num}/{name}_S{num}_AvgVol_*.mrc".format(num=i, name=baseNameFile))[0]
         openAverage(avgPath)
         time.sleep(1)
     print("All segments have been opened")
