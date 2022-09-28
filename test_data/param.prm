@@ -1,0 +1,237 @@
+
+# fnVolume: The file names of tomograms
+fnVolume = {'../CG2_3_10_bin4.mrc'}
+
+# fnModParticle: The file names of IMOD models for each tomogram.
+fnModParticle = {'MTa_PtsAdded_Twisted.mod'}
+
+# initMOTL: A code specifying how to construct the initial motive list:
+# 0: Set all rotational values to zero
+#  
+# 1: Use the particle and reference model points to initialize
+#    rotation around the particle z axis
+#  
+# 2: Use the particle and reference model points to initialize
+#    rotation around the particle x and z axes
+#  
+# 3: Uniform random rotations
+#  
+# 4: Random axial rotations
+#  
+# or a cell array of strings specify the filenames to load
+initMOTL = {'MTa_PtsAddedRefP55_initMOTL.csv'}
+
+# tiltRange: The tilt angles used to acquire the tilt series [min max].
+# Used to compensate for the missing wedge during alignment and
+# averaging.  An empty array, [] or {}, disables this compensation 
+# (and uses more efficient but less accurate real-space averaging).
+# For use with dual or multiple axes, tiltRange can also be a (cell) array
+# of strings, with each string specifying the path to an appropriate
+# binary mask.
+tiltRange = {[-56.18, 56.04]}
+
+# dPhi: dPhi: angular search range around the particle Y axis.
+dPhi = {-9:6:9, -4:3:4, -2:1.5:2, -1:1:1}
+
+# dTheta: dTheta: angular search range around the particle Z axis.
+dTheta = {-9:6:9, -4:3:4, -2:1.5:2, -1:1:1}
+
+# dPsi: dPsi: angular search range around the paricle X axis.
+dPsi = {-9:6:9, -4:3:4, -2:1.5:2, -1:1:1}
+
+# searchRadius: Search radii in tomogram pixels for each iteration.
+# A single integer specifies the same radius for X, Y, and Z, while
+# a vector of 3 integers gives X, Y, and Z radii separately. E.g.
+# searchRadius={4, 5} is equivalent to searchRadius={[4 4 4], [5 5 5]}.
+searchRadius = {[6], [4], [2], [1]}
+
+# lowCutoff: The frequency domain cutoff parameters for prefiltering the
+# particles and reference. lowCutoff =< 0 prevents low frequency
+# filtering. An optional second parameter defines the transition width.
+lowCutoff = {[0, 0.05], [0, 0.05], [0, 0.05], [0, 0.05]}
+
+# hiCutoff: The frequency domain cutoff parameters for prefiltering the
+# particles and reference. hiCutoff >= 0.866 prevents high frequency 
+# filtering. An optional second parameter defines the transition width.
+hiCutoff = {[0.1, 0.05], [0.1, 0.05], [0.1, 0.05], [0.1, 0.05]}
+
+# refThreshold: Controls reference generation at each iteration. If less
+# than or equal 1, it specifies the minimum cross-correlation threshold.
+# If greater than 1, it is the number of particles to use.
+refThreshold = {110, 110, 110, 110}
+
+# duplicateShiftTolerance: an integer array giving the maximum distances 
+# in pixels at which particles can be considered duplicates at each 
+# iteration. As for searchRadius, X, Y and Z distances may be specified 
+# individually or a single number can be given for all 3.
+duplicateShiftTolerance = [1, 1, 1, 1]
+
+# duplicateAngularTolerance: an array giving the maximum angle (in degrees) 
+# between orientations at which particles can be considered duplicates at 
+# each iteration.
+duplicateAngularTolerance = [1, 1, 1, 1]
+
+# reference: If flgFairReference = 1, an integer k specifying that a
+# binary search using k levels will be used to generate a multiparticle
+# reference containing 2^k particles. Otherwise, if a string, the name 
+# of an MRC file containing the reference volume, or if [i  j], 
+# specifies the jth particle of ^the ith volume as the reference.
+reference = [1, 55]
+
+# fnOutput: The base name to use in constructing output filenames.
+fnOutput = 'MTa'
+
+# szVol: The size of the volume to be averaged in voxels.
+szVol = [64, 64, 64]
+
+# alignedBaseName: The basename for writing invididual aligned particles.
+# (default = '' or missing means do not create these files).
+alignedBaseName = ''
+
+# debugLevel: How much debugging info to print < 0 | 1 | 2 | 3 >
+debugLevel = 3
+
+# lstThresholds: Numbers of particles to use for computing the final averages.
+# A volume will generated for each value in this vector. The
+#  corresponding files will be named <fnOutput>_AvgVol_<iterNum>P<navg>.mrc
+lstThresholds = [111:111:111]
+
+# refFlagAllTom: Controls particle selection during reference generation.
+# 1: use particles with the best correlation scores among all
+#    particles of all tomos when creating new references.
+# 0: prefer equal numbers of particles from each tomogram
+#    when creating new references.
+refFlagAllTom = 1
+
+# lstFlagAllTom: Controls particle selection during final averaging.
+# 1: use particles with best correlation scores among all particles
+#    of all tomos when creating final averages.
+# 0: prefer equal number of particles from each tomo when creating 
+#    final averages.
+lstFlagAllTom = 1
+
+# particlePerCPU: The maximum number of particles distributed simultaneously to 
+# a single cpu during parallel processing.
+particlePerCPU = 5
+
+# yaxisType: specifies the particle's Y axis.
+# 0: use the volume's Y axis as the particle's Y axis.
+# 1: particle model points determine the particle Y axis.
+# 2: end points of the contour containing the particle determine the
+#    particle Y axis.
+# 3: user-defined Y axes.
+yaxisType = 1
+
+# yaxisObjectNum: OBSOLETE. No longer supported.
+yaxisObjectNum = NaN
+
+# yaxisContourNum: OBSOLETE. No longer supported.
+yaxisContourNum = NaN
+
+# flgWedgeWeight: Apply missing wedge compensation during alignment?
+flgWedgeWeight = 1
+
+# sampleSphere: If set to 'full' or 'half', speed up full- or half-
+# spherical searches at the first iteration by automatically choosing 
+# appropriate angular sampling intervals for Theta and Psi based on 
+# sampleInterval. If missing or set to 'none', do a full grid search 
+# based on dPhi, dTheta, and dPsi.
+sampleSphere = 'none'
+
+# sampleInterval: during spherical sampling, the minimum interval in
+# degrees at which Theta and Psi will be sampled. This sampling interval
+# will be used at the equator, with larger intervals nearer the poles.
+sampleInterval = NaN
+
+# maskType: Controls optional masking of the reference. 
+# If 'sphere' or 'cylinder", generate a spherical or cylindrical mask 
+# based on 'insideMaskRadius' and ^'outsideMaskRadius'. The axis of the
+# cylindrical mask will default to the particle Y axis, but can be 
+# overridden using MaskModelPts, below. If a string other than than 'sphere', 
+# 'cylinder', or 'none', the filename of an MRC image containing the mask, 
+# with non-zero values indicating voxels to be included. If missing, or set
+# to 'none', there will be no masking.
+maskType = 'cylinder'
+
+# maskModelPts: Manually specify cylindrical mask orientation.
+# If not empty, determines the axis of the cylindrical mask.
+# The format is [Z Y], where Z and Y are Slicer angles specifying rotations
+# in integer degrees around the tomogram Z and Y axes. These rotations
+# (first Z, then Y) will be applied to an initial vector along the Y axis.
+# If empty, PEET will attempt to choose an appropriate axis automatically.
+maskModelPts = []
+
+# insideMaskRadius: radius in pixels. 
+# Voxels at smaller radii will be masked out.
+insideMaskRadius = 12
+
+# outsideMaskRadius: = radius in pixels. 
+# Voxels at larger radii will be masked out.
+outsideMaskRadius = 28
+
+# nWeightGroup: number of groups to use for equalizing cross-correlation
+# between groups with different orientations during averaging.
+nWeightGroup = 8
+
+# flgRemoveDuplicates: If non-zero, duplicate particles will be removed from
+# further consideration after each round of alignment by assigning them
+# to the duplicate class ID (-9999). AverageAll and calcSSNR ignore
+# members of this class when flgRemoveDuplicates is 1. calcFSC does also 
+# unless -9999 is explicitly added to selectClassID.
+flgRemoveDuplicates = 0
+
+# flgAlignAverages: If non-zero, align particles to have their Y axes
+# approximately vertical in the final average.
+flgAlignAverages = 1
+
+# flgFairReference: If 1, create a multiparticle reference. Otherwise, 
+# choose a single ^particle reference or use the user-specified volume.
+flgFairReference = 0
+
+# flgAbsValue: If 1 (default), maximize the absolute value of the 
+# cross-correlation during alignment, rather than the raw  
+# cross-correlation. Use of the absolute value reduces the chance of 
+# pure noise reinforcing to match the reference, but can prevent 
+# proper alignment of some  highly repetitive patterns (e.g. 
+# checkerboard or zebra stripe patterns) in which in which in- and  
+# out-of-phase alignments become indistinguishable.
+flgAbsValue = 1
+
+# flgStrictSearchLimits: If 0 (default) or missing, radial and
+# angular search limits will be  applied independently at each iteration.
+#  If 1, the overall change for any parameter will be limited to the largest 
+# change specified at any single iteration.
+flgStrictSearchLimits = 1
+
+# flgNoReferenceRefinement: If 1, use the initial reference at all 
+# iterations. If 0 (the default), a refined estimate of the reference 
+# will be generated at each iteration.
+flgNoReferenceRefinement = 0
+
+# flgRandomize: If 1 (default = 0), select particles for averaging randomly, 
+# rather than by cross-correlation.
+flgRandomize = 0
+
+# cylinderHeight: The height in voxels of the cylindrical mask. Blank or NaN 
+# will be treated as infinity, and the cylinder will span the entire volume.
+cylinderHeight = 64
+
+# maskBlurStdDev: Blur the mask by convolution with a Gaussian having this 
+# standard deviation (in voxels). If omitted or NaN (the default), the 
+# mask will be binary. After blurring, the mask edge will be spread 
+# over approximately 2.5 standard deviations on either side of 
+# the original edge location.
+maskBlurStdDev = 2
+
+# flgVolNamesAreTemplates: If 1 (default = 0), file names in the volume 
+# table (i.e. volume, model, initial motive list, and wedge mask file 
+# names) may be templates to be expanded rather than individual 
+# filenames. For example, "vol1-10.mrc", would be expanded by PEET to 
+# [vol1.mrc, vol2.mrc, ... vol10.mrc]. Any filename ending in 2 numbers 
+# separated by a dash ('-') and, optionally, follwed by a suffix, will 
+# be considered a template.
+flgVolNamesAreTemplates = 0
+
+# edgeShift: The number of pixels to shift the edge of the wedge mask to 
+# ensure that all of the frequency info is included.
+edgeShift = 0
