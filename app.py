@@ -4,11 +4,9 @@ import os
 import subprocess
 import glob
 import time
+import math
 
-
-# This is basically what automaticsegment.py was previously minus functions
 # TODO
-# automatic choice of particle per CPU, to do with optional arguments
 # Graphical interface
 # fix when file are not found (for example in splitIntoseg with the model pts added)
 # Better PRM modification ==> DONE, need to be tested
@@ -25,13 +23,14 @@ def round_to_even(nombre):
     return round(nombre / 2.0) * 2
 
 
-def modifier_prm(lines, base_name, segment_number, nb_particle, nb_search, pixel_size, tomo_path):
+def modifier_prm(lines, base_name, segment_number, nb_particle, nb_search, pixel_size, tomo_path, number_cpu):
     volume_size = round_to_even(64 * 8.0 / pixel_size)  # Change 64 for different "base" size of box
+    CPU = math.ceil(nb_particle/number_cpu)
     lines_to_change = [
         ("szVol = " + "[{sz}, {sz}, {sz}]".format(sz=volume_size) + "\n",
          fcm.search_string_in_file(lines, "szVol = ")),
-        ("cylinder_height = " + str(volume_size) + "\n",
-         fcm.search_string_in_file(lines, "cylinder_height = ")),
+        ("cylinderHeight = " + str(volume_size) + "\n",
+         fcm.search_string_in_file(lines, "cylinderHeight = ")),
         ("insideMaskRadius = " + str(round(10 * 8.0 / pixel_size)) + "\n",
          fcm.search_string_in_file(lines, "insideMaskRadius = ")),
         ("outsideMaskRadius = " + str(round(28 * 8.0 / pixel_size)) + "\n",
@@ -45,7 +44,9 @@ def modifier_prm(lines, base_name, segment_number, nb_particle, nb_search, pixel
         ("fnVolume = {'../" + tomo_path + "'}\n",
          fcm.search_string_in_file(lines, "fnVolume = ")),
         ("fnOutput = '{}_S{}'\n".format(base_name, segment_number),
-         fcm.search_string_in_file(lines, "fnOutput = "))]
+         fcm.search_string_in_file(lines, "fnOutput = ")),
+        ("particlePerCPU = " + str(CPU) + "\n",
+         fcm.search_string_in_file(lines, "particlePerCPU = "))]
     modified_prm = lines
     for (param, index) in lines_to_change:
         modified_prm = fcm.change_line(modified_prm, index, param)
@@ -57,8 +58,9 @@ def open_average(path_to_avg):
     subprocess.run(commandToRun, shell=True)
 
 
-def run():
-    print("everything is working as I intend and thats great")
+def run(number_core):
+    print("Change fixe working dir")
+    os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa")
     base_name_file = input("Enter the basename. For example : MTa will create MTa_S1, MTa_S2, etc... \n")
     nb_of_segment = int(input("Enter how many segment you want to generate :\n"))
     cpm.create_segments(nb_of_segment, base_name_file)
@@ -72,7 +74,7 @@ def run():
 
     for i in range(1, nb_of_segment + 1):
         new_file = modifier_prm(ref_lines, base_name_file, i, number_of_particle, number_of_search, pixel_spacing,
-                                path_to_tomo)
+                                path_to_tomo, number_core)
         base_name_with_segment = base_name_file + '_S' + str(i)
         new_file_path = "./segment{number}/{filename}.prm".format(number=i, filename=base_name_with_segment)
         fcm.write_file(new_file_path, new_file)
@@ -81,9 +83,10 @@ def run():
 
     all_procs = []
     for i in range(1, nb_of_segment + 1):
+        base_name_with_segment = base_name_file + '_S' + str(i)
         cpm.lancer_parser_segment(base_name_with_segment, i)
         # ProcessChunk will not start until parser has finished
-        all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i))
+        all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
 
     # Wait for all process to end before ending program
 
@@ -94,7 +97,7 @@ def run():
     show_surface = int(input("Would you like to see all isosurface ? 1 for yes 2 for no\n"))
     if show_surface == 1:
         for i in range(1, nb_of_segment + 1):
-            avg_path = glob.glob("./segment{num}/{name}_S{num}_AvgVol_*.mrc".format(num=i, name=baseNameFile))[0]
+            avg_path = glob.glob("./segment{num}/{name}_S{num}_AvgVol_*.mrc".format(num=i, name=base_name_file))[0]
             open_average(avg_path)
             time.sleep(1)
         print("All segments have been opened")

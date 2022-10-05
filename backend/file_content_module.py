@@ -1,3 +1,6 @@
+import subprocess
+
+
 def open_file(baseName):
     """This command returns the text file content as a list
     :param baseName: path as a string
@@ -26,7 +29,7 @@ def change_line(lines, index, replacement):
     """Replace a line in a file stored as a line
     :param lines: file content as list of lines
     :param index: int
-    :param remplacement: string
+    :param replacement: string
     """
     lines[index] = replacement
     return lines
@@ -48,9 +51,9 @@ def get_number_of_particle(pathToMotivList):
     return len(open_file(pathToMotivList)) - 1
 
 
-def determine_pixel_spacing(lines: list) -> pixel and str:
+def determine_pixel_spacing(lines: list) -> float and str:
     """Return the pixel size in a tomogram as well as the path to said tomogram"""
-    tomo_path = lines[fcm.search_string_in_file("fnVolume = ")].split("'")[1]
+    tomo_path = lines[search_string_in_file(lines, "fnVolume = ")].split("'")[1]
     # if not os.path.exists(tomo_path):
     #     root = tk.Tk()
     #     root.withdraw()
