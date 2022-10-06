@@ -167,7 +167,7 @@ def run(number_core, seg_only):
         fcm.write_file(prm_path, new_prm)
         if not seg_only:
             cpm.lancer_parser(base_name_file)
-            #all_procs.append(cpm.lancer_process_chunk_fullmt(base_name_file, number_core))
+            all_procs.append(cpm.lancer_process_chunk_fullmt(base_name_file, number_core))
 
         ref_lines = fcm.open_file(prm_path)  # Now that the new prm exist we can load it for segments
     else:
@@ -195,7 +195,7 @@ def run(number_core, seg_only):
         base_name_with_segment = base_name_file + '_S' + str(i)
         cpm.lancer_parser_segment(base_name_with_segment, i)
         # ProcessChunk will not start until parser has finished
-        #all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
+        all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
 
     # ait for all process to end before ending program
 
