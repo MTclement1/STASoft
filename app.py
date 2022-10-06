@@ -123,9 +123,6 @@ def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_o
                           tomo_path, volume_size, pixel_spacing):
     motiv_path = glob.glob(os.getcwd() + "/segment{}/*RefP*.csv".format(segment_number))[0]
     mod_path = glob.glob(os.getcwd() + "/segment{}/*Twisted.mod".format(segment_number))[0]
-
-    print("Dans generate on a le path : " + tomo_path)
-
     CPU = math.ceil(number_of_particle / number_cpu)
     lines_to_change = [("fnOutput = '{}_S{}'\n".format(base_name, segment_number),
                         fcm.search_string_in_file(lines, "fnOutput = ")),
@@ -156,21 +153,22 @@ def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_o
 
 
 def run(number_core, seg_only):
-    print("Change fixe working dir")
-    os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa")
+    #os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa")
     base_name_file = input("Enter the basename. For example : MTa will create MTa_S1, MTa_S2, etc... \n")
     nb_of_segment = int(input("Enter how many segment you want to generate :\n"))
     prm_path = "./" + base_name_file + ".prm"
     ref_lines = fcm.open_file(prm_path)
     all_procs = []
-    if ref_lines is None or not seg_only:
+    if ref_lines is None:
         print("{} could not be found, loading default prm...\n".format(prm_path))
         ref_lines = dft.BASE_PRM
         lines_to_change = generate_main_mt_prm(ref_lines, base_name_file, number_core)
         new_prm = modifier_prm(ref_lines, lines_to_change)
         fcm.write_file(prm_path, new_prm)
-        cpm.lancer_parser(base_name_file)
-        all_procs.append(cpm.lancer_process_chunk_fullmt(base_name_file, number_core))
+        if not seg_only:
+            cpm.lancer_parser(base_name_file)
+            #all_procs.append(cpm.lancer_process_chunk_fullmt(base_name_file, number_core))
+
         ref_lines = fcm.open_file(prm_path)  # Now that the new prm exist we can load it for segments
     else:
         print("Generating segments using {}.prm file...".format(base_name_file))
@@ -197,7 +195,7 @@ def run(number_core, seg_only):
         base_name_with_segment = base_name_file + '_S' + str(i)
         cpm.lancer_parser_segment(base_name_with_segment, i)
         # ProcessChunk will not start until parser has finished
-        all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
+        #all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
 
     # ait for all process to end before ending program
 

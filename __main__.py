@@ -12,7 +12,7 @@ if __name__ == '__main__':
     parser.set_defaults(seg_only=False)
     parser.add_option("-c", "--core", dest="number_core", type="int", help="input number of true core on your "
                                                                            "machine, default is 12", metavar="INT")
-    parser.add_option("-s", "--segments", dest="seg_only", action="store_true", help="Assume that the whole MT STA is "
+    parser.add_option("-s", "--segments", action="store_true", dest="seg_only", help="Assume that the whole MT STA is "
                                                                                      "already generated and only "
                                                                                      "generate segments")
     (options, args) = parser.parse_args()

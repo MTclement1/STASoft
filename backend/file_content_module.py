@@ -59,7 +59,6 @@ def get_number_of_particle(pathToMotivList):
 
 def determine_pixel_spacing(tomo_path):
     """Return the pixel size in a tomogram as well as the path to said tomogram"""
-    print("Dans la fonction on est : " + os.getcwd())
     if not os.path.exists(tomo_path):
         root = tk.Tk()
         root.withdraw()
