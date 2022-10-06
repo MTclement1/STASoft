@@ -1,15 +1,21 @@
 import subprocess
+import tkinter as tk
+import os
+from tkinter import filedialog
 
 
-def open_file(baseName):
+def open_file(path):
     """This command returns the text file content as a list
-    :param baseName: path as a string
-    :return: a list of lines
+    :param path: string from the path
+    :return: a list of lines or None
     """
-    file = open(baseName, 'r')
-    lines = file.readlines()
-    file.close()
-    return lines
+    try:
+        with open(path, 'r') as file:
+            lines = file.readlines()
+            file.close()
+            return lines
+    except FileNotFoundError:
+        return None
 
 
 def search_string_in_file(fileContent, aStringToFind):
@@ -40,9 +46,9 @@ def write_file(path, content):
     :param path: string
     :param content: list of string
     """
-    file = open(path, 'w')
-    file.writelines(content)
-    file.close()
+    with open(path, 'w') as file:
+        file.writelines(content)
+        file.close()
     return True
 
 
@@ -51,15 +57,26 @@ def get_number_of_particle(pathToMotivList):
     return len(open_file(pathToMotivList)) - 1
 
 
-def determine_pixel_spacing(lines: list) -> float and str:
+def determine_pixel_spacing(tomo_path):
     """Return the pixel size in a tomogram as well as the path to said tomogram"""
-    tomo_path = lines[search_string_in_file(lines, "fnVolume = ")].split("'")[1]
-    # if not os.path.exists(tomo_path):
-    #     root = tk.Tk()
-    #     root.withdraw()
-    #     tomo_path = os.path.relpath(filedialog.askopenfilename(initialdir=os.getcwd()))
+    print("Dans la fonction on est : " + os.getcwd())
+    if not os.path.exists(tomo_path):
+        root = tk.Tk()
+        root.withdraw()
+        tomo_path = os.path.relpath(filedialog.askopenfilename(initialdir=os.getcwd(), ))
+        root.update()
+        root.destroy()
     command = "header -p " + tomo_path
     output = subprocess.run(command, shell=True, capture_output=True, text=True).stdout
     output = output.strip()
     pixel = output.split()[0]
     return float(pixel), tomo_path
+
+
+def get_tilt_range(path):
+    with open(path, 'r') as file:
+        lines = file.readlines()
+        file.close()
+        min_angle = lines[0].rstrip()[1:]
+        max_angle = lines[len(lines) - 1].rstrip()[2:]
+    return min_angle, max_angle

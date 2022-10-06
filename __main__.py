@@ -9,9 +9,13 @@ from optparse import OptionParser
 if __name__ == '__main__':
     parser = OptionParser()
     parser.set_defaults(number_core=12)
+    parser.set_defaults(seg_only=False)
     parser.add_option("-c", "--core", dest="number_core", type="int", help="input number of true core on your "
                                                                            "machine, default is 12", metavar="INT")
+    parser.add_option("-s", "--segments", dest="seg_only", action="store_true", help="Assume that the whole MT STA is "
+                                                                                     "already generated and only "
+                                                                                     "generate segments")
     (options, args) = parser.parse_args()
-    app.run(options.number_core)
+    app.run(options.number_core, options.seg_only)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
