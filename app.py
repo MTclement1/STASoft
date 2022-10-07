@@ -9,16 +9,13 @@ import math
 
 
 # TODO
-# It is possible to have all prm loading with *.prm to remove any trouble with different base
-# name but it might not be the best
 # Graphical interface
-# fix when file are not found (for example in splitIntoseg with the model pts added)
 # Possibly using shutil.which and replace all command with their direct path
 # Alternatively, shell=False can be used when command is used as a list with arguments (see docu). Might help on W10
 # Use subprocess.call in lancer prm parser and chunk to prevent starting chunk before parser has finished.
 # popen.wait maybe can be useful too. exit_codes = [p.wait() for p in p1, p2] for multiple processes. Note that
 # according to the python documentation subprocess.run waits for the process to end
-# Gestion double axis
+
 
 def round_to_even(nombre):
     return round(nombre / 2.0) * 2
@@ -37,7 +34,12 @@ def open_average(path_to_avg):
 
 
 def generate_main_mt_prm(ref_lines, base_name, number_cpu):
-    number_of_particle = fcm.get_number_of_particle(glob.glob(os.getcwd() + "/*RefP*.csv")[0])
+    number_of_particle = 0
+    try:
+        number_of_particle = fcm.get_number_of_particle(glob.glob(os.getcwd() + "/*RefP*.csv")[0])
+    except IndexError:
+        print("Could not find any file following the structure : *RefP*.csv please fix and retry\n")
+        exit(2)
     choice = int(input("Do you want to add another search ? 0 for no, 1 for theta only, 2 for psi only, 3 for both\n"))
     lines_to_change = []
     phi = ""
@@ -68,20 +70,43 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
         lines_to_change.append((theta, fcm.search_string_in_file(ref_lines, "dTheta = ")))
     else:
         print("This is not a possible answer to the question. Program will exit")
-        exit(2)
+        exit(1)
 
     pixel_size, path_tomo = fcm.determine_pixel_spacing("../tomogram.mrc")
     volume_size = round_to_even(64 * 8.0 / pixel_size)
     number_of_search = len(phi.split(","))
+    tilt_angles = (0, 0)
+
     if not glob.glob(os.path.dirname(path_tomo)+'/*DualAxisMask.mrc'):
-        tilt_angles = fcm.get_tilt_range(glob.glob(os.path.dirname(path_tomo) + '/*.tlt')[0])
+        try:
+            tilt_angles = fcm.get_tilt_range(glob.glob(os.path.dirname(path_tomo) + '/*.tlt')[0])
+        except IndexError:
+            print("Could not find any file following the structure : *.tlt in tomogram folder please fix and retry\n")
+            exit(2)
     else:
-        tilt_angles = os.path.abspath(glob.glob(os.path.dirname(path_tomo)+'/*DualAxisMask.mrc')[0])
+        try:
+            tilt_angles = os.path.abspath(glob.glob(os.path.dirname(path_tomo)+'/*DualAxisMask.mrc')[0])
+        except IndexError:
+            print("Could not find any file following the structure : *DualAxisMask.mrc in tomogram folder please "
+                  "fix and retry\n")
+            exit(2)
+    path_mod = ""
+    try:
+        path_mod = os.path.relpath(glob.glob(os.getcwd() + "/*Twisted.mod")[0])
+    except IndexError:
+        print("Could not find any file following the structure : *Twisted.mod in MT folder, please fix\n")
+        exit(2)
+    path_motiv = ""
+    try:
+        path_motiv = os.path.relpath(glob.glob(os.getcwd() + "/*initMOTL.csv")[0])
+    except IndexError:
+        print("Could not find any file following the structure : *initMOTL.csv in MT folder, please fix\n")
+        exit(2)
     lines_to_change.append(("fnVolume = {'" + path_tomo + "'}\n",
                             fcm.search_string_in_file(ref_lines, "fnVolume = ")))
-    lines_to_change.append(("fnModParticle = {'" + glob.glob(os.getcwd() + "/*Twisted.mod")[0] + "'}\n",
+    lines_to_change.append(("fnModParticle = {'" + path_mod + "'}\n",
                             fcm.search_string_in_file(ref_lines, "fnModParticle = ")))
-    lines_to_change.append(("initMOTL = {'" + glob.glob(os.getcwd() + "/*initMOTL.csv")[0] + "'}\n",
+    lines_to_change.append(("initMOTL = {'" + path_motiv + "'}\n",
                             fcm.search_string_in_file(ref_lines, "initMOTL = ")))
     if isinstance(tilt_angles, tuple):
         lines_to_change.append(("tiltRange = {[" + tilt_angles[0] + ", " + tilt_angles[1] + "]}\n",
@@ -100,9 +125,9 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
     lines_to_change.append(("refThreshold = {" + (str(number_of_particle) + ", ") * (number_of_search - 1) + str(
         number_of_particle) + "}\n",
                             fcm.search_string_in_file(ref_lines, "refThreshold = ")))
-    lines_to_change.append(("duplicateShiftTolerance = " + "[NaN], " * (number_of_search - 1) + "[1]\n",
+    lines_to_change.append(("duplicateShiftTolerance = " + "[NaN], " * (number_of_search - 1) + "[NaN]\n",
                             fcm.search_string_in_file(ref_lines, "duplicateShiftTolerance = ")))
-    lines_to_change.append(("duplicateAngularTolerance = " + "[NaN], " * (number_of_search - 1) + "[1]\n",
+    lines_to_change.append(("duplicateAngularTolerance = " + "[NaN], " * (number_of_search - 1) + "[NaN]\n",
                             fcm.search_string_in_file(ref_lines, "duplicateAngularTolerance = ")))
     lines_to_change.append(("reference = " + "[1, " + str(round(number_of_particle / 2)) + "]" + "\n",
                             fcm.search_string_in_file(ref_lines, "reference = [")))
@@ -125,8 +150,18 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
 
 def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_of_particle, number_of_search,
                           tomo_path, volume_size, pixel_spacing):
-    motiv_path = glob.glob(os.getcwd() + "/segment{}/*RefP*.csv".format(segment_number))[0]
-    mod_path = glob.glob(os.getcwd() + "/segment{}/*Twisted.mod".format(segment_number))[0]
+    motiv_path = ""
+    try:
+        motiv_path = os.path.basename(glob.glob(os.getcwd() + "/segment{}/*RefP*.csv".format(segment_number))[0])
+    except IndexError:
+        print("Could not find any file following the structure : *RefP*.csv in segment folder, please fix\n")
+        exit(2)
+    mod_path = ""
+    try:
+        mod_path = os.path.basename(glob.glob(os.getcwd() + "/segment{}/*Twisted.mod".format(segment_number))[0])
+    except IndexError:
+        print("Could not find any file following the structure : *Twisted.mod in segment folder, please fix\n")
+        exit(2)
     CPU = math.ceil(number_of_particle / number_cpu)
     lines_to_change = [("fnOutput = '{}_S{}'\n".format(base_name, segment_number),
                         fcm.search_string_in_file(lines, "fnOutput = ")),
@@ -157,10 +192,10 @@ def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_o
 
 
 def run(number_core, seg_only):
-    # os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa")
+    # os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa") # For debugging only
     base_name_file = input("Enter the basename. For example : MTa will create MTa_S1, MTa_S2, etc... \n")
     nb_of_segment = int(input("Enter how many segment you want to generate :\n"))
-    prm_path = "./" + base_name_file + ".prm"
+    prm_path = "./" + base_name_file + ".prm"  # It is also possible to have all prm loading with *.prm
     ref_lines = fcm.open_file(prm_path)
     all_procs = []
     if ref_lines is None:
@@ -178,7 +213,12 @@ def run(number_core, seg_only):
 
     # First create all prm files then start the averaging
     cpm.create_segments(nb_of_segment, base_name_file)
-    motiv_path = glob.glob(os.getcwd() + "/segment1/*RefP*.csv")[0]
+    motiv_path = ""
+    try:
+        motiv_path = os.path.relpath(glob.glob(os.getcwd() + "/segment1/*RefP*.csv")[0])
+    except IndexError:
+        print("Could not find any file following the structure : *RefP*.csv in segment 1 folder, please fix\n")
+        exit(2)
     number_of_particle = fcm.get_number_of_particle(motiv_path)
     nbr_search = len(ref_lines[fcm.search_string_in_file(ref_lines, "dPhi = ")].split(","))
     tomo_path = ref_lines[fcm.search_string_in_file(ref_lines, "fnVolume = ")].split("'")[1]
@@ -200,7 +240,7 @@ def run(number_core, seg_only):
         # ProcessChunk will not start until parser has finished
         all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
 
-    # ait for all process to end before ending program
+    # Wait for all process to end before ending program
 
     for process in all_procs:
         process.communicate(timeout=3600)

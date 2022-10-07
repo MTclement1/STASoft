@@ -8,7 +8,11 @@ def create_segments(numberOfSegment, baseName):
     :param numberOfSegment: int
     :param baseName: string
     """
-    path_to_mtv_list = os.path.relpath(glob.glob("*RefP*.csv")[0])
+    try:
+        path_to_mtv_list = os.path.relpath(glob.glob("*RefP*.csv")[0])
+    except IndexError:
+        print("Could not find any file following the structure : *RefP*.csv please fix and retry\n")
+        exit(2)
     command = "splitIntoNSegments {nbr} {name}_PtsAdded_Twisted.mod {mtv}".format(nbr=numberOfSegment, name=baseName,
                                                                                   mtv=path_to_mtv_list)
     subprocess.run(command, shell=True)
