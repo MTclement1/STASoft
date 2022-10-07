@@ -14,13 +14,11 @@ import math
 # Graphical interface
 # fix when file are not found (for example in splitIntoseg with the model pts added)
 # Possibly using shutil.which and replace all command with their direct path
-# Allow for optional arguments as a way to modify the file
-# Prepare unit testing file https://pymbook.readthedocs.io/en/latest/testing.html
 # Alternatively, shell=False can be used when command is used as a list with arguments (see docu). Might help on W10
 # Use subprocess.call in lancer prm parser and chunk to prevent starting chunk before parser has finished.
 # popen.wait maybe can be useful too. exit_codes = [p.wait() for p in p1, p2] for multiple processes. Note that
 # according to the python documentation subprocess.run waits for the process to end
-
+# Gestion double axis
 
 def round_to_even(nombre):
     return round(nombre / 2.0) * 2
@@ -75,16 +73,22 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
     pixel_size, path_tomo = fcm.determine_pixel_spacing("../tomogram.mrc")
     volume_size = round_to_even(64 * 8.0 / pixel_size)
     number_of_search = len(phi.split(","))
-    tilt_angles = fcm.get_tilt_range(glob.glob(os.path.dirname(path_tomo) + '/*.tlt')[0])
-
+    if not glob.glob(os.path.dirname(path_tomo)+'/*DualAxisMask.mrc'):
+        tilt_angles = fcm.get_tilt_range(glob.glob(os.path.dirname(path_tomo) + '/*.tlt')[0])
+    else:
+        tilt_angles = os.path.abspath(glob.glob(os.path.dirname(path_tomo)+'/*DualAxisMask.mrc')[0])
     lines_to_change.append(("fnVolume = {'" + path_tomo + "'}\n",
                             fcm.search_string_in_file(ref_lines, "fnVolume = ")))
     lines_to_change.append(("fnModParticle = {'" + glob.glob(os.getcwd() + "/*Twisted.mod")[0] + "'}\n",
                             fcm.search_string_in_file(ref_lines, "fnModParticle = ")))
     lines_to_change.append(("initMOTL = {'" + glob.glob(os.getcwd() + "/*initMOTL.csv")[0] + "'}\n",
                             fcm.search_string_in_file(ref_lines, "initMOTL = ")))
-    lines_to_change.append(("tiltRange = {[" + tilt_angles[0] + ", " + tilt_angles[1] + "]}\n",
-                            fcm.search_string_in_file(ref_lines, "tiltRange = {[")))
+    if isinstance(tilt_angles, tuple):
+        lines_to_change.append(("tiltRange = {[" + tilt_angles[0] + ", " + tilt_angles[1] + "]}\n",
+                                fcm.search_string_in_file(ref_lines, "tiltRange = {[")))
+    else:
+        lines_to_change.append(("tiltRange = {'" + tilt_angles + "'}\n",
+                                fcm.search_string_in_file(ref_lines, "tiltRange = {")))
     lines_to_change.append((phi,
                             fcm.search_string_in_file(ref_lines, "dPhi = ")))
     lines_to_change.append((sradius,
@@ -153,7 +157,7 @@ def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_o
 
 
 def run(number_core, seg_only):
-    #os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa")
+    # os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa")
     base_name_file = input("Enter the basename. For example : MTa will create MTa_S1, MTa_S2, etc... \n")
     nb_of_segment = int(input("Enter how many segment you want to generate :\n"))
     prm_path = "./" + base_name_file + ".prm"
@@ -168,7 +172,6 @@ def run(number_core, seg_only):
         if not seg_only:
             cpm.lancer_parser(base_name_file)
             all_procs.append(cpm.lancer_process_chunk_fullmt(base_name_file, number_core))
-
         ref_lines = fcm.open_file(prm_path)  # Now that the new prm exist we can load it for segments
     else:
         print("Generating segments using {}.prm file...".format(base_name_file))
