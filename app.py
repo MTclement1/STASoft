@@ -11,10 +11,7 @@ import math
 # TODO
 # Graphical interface
 # Possibly using shutil.which and replace all command with their direct path
-# Alternatively, shell=False can be used when command is used as a list with arguments (see docu). Might help on W10
-# Use subprocess.call in lancer prm parser and chunk to prevent starting chunk before parser has finished.
-# popen.wait maybe can be useful too. exit_codes = [p.wait() for p in p1, p2] for multiple processes. Note that
-# according to the python documentation subprocess.run waits for the process to end
+
 
 
 def round_to_even(nombre):
@@ -29,8 +26,8 @@ def modifier_prm(lines, lines_to_change):
 
 
 def open_average(path_to_avg):
-    commandToRun = "3dmod -V -E U " + path_to_avg
-    subprocess.run(commandToRun, shell=True)
+    commandToRun = ["3dmod", "-V", "-E", "U ", path_to_avg]
+    subprocess.run(commandToRun)
 
 
 def generate_main_mt_prm(ref_lines, base_name, number_cpu):

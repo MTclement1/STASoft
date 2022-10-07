@@ -66,7 +66,7 @@ def determine_pixel_spacing(tomo_path):
         root.update()
         root.destroy()
     command = "header -p " + tomo_path
-    output = subprocess.run(command, shell=True, capture_output=True, text=True).stdout
+    output = subprocess.run(command.split(" "), capture_output=True, text=True).stdout
     output = output.strip()
     pixel = output.split()[0]
     return float(pixel), tomo_path

@@ -8,6 +8,7 @@ def create_segments(numberOfSegment, baseName):
     :param numberOfSegment: int
     :param baseName: string
     """
+    path_to_mtv_list = ""
     try:
         path_to_mtv_list = os.path.relpath(glob.glob("*RefP*.csv")[0])
     except IndexError:
@@ -15,7 +16,8 @@ def create_segments(numberOfSegment, baseName):
         exit(2)
     command = "splitIntoNSegments {nbr} {name}_PtsAdded_Twisted.mod {mtv}".format(nbr=numberOfSegment, name=baseName,
                                                                                   mtv=path_to_mtv_list)
-    subprocess.run(command, shell=True)
+
+    subprocess.run(command.split(" "))
 
 
 def lancer_parser_segment(base_name_with_segment, segment_number):
@@ -30,7 +32,7 @@ def lancer_parser_segment(base_name_with_segment, segment_number):
 
     # Parser
     command_parser = "prmParser " + base_name_with_segment + ".prm"
-    subprocess.run(command_parser, shell=True)  # should be waiting before doing next (independant of shell = True)
+    subprocess.run(command_parser.split(" "))  # should be waiting before doing next (independant of shell = True)
     os.chdir("..")
     return True
 
@@ -42,7 +44,7 @@ def lancer_parser(base_name):
     """
     # Parser
     command_parser = "prmParser " + base_name + ".prm"
-    subprocess.run(command_parser, shell=True)  # should be waiting before doing next (independant of shell = True)
+    subprocess.run(command_parser.split(" "))  # should be waiting before doing next (independant of shell = True)
     return True
 
 
@@ -55,7 +57,7 @@ def lancer_process_chunk_fullmt(base_name: str, number_core):
     # Generate average
     command_process = "processchunks -g -P -c " + base_name + ".cmds localhost:" + str(
         number_core) + " " + base_name
-    proc = subprocess.Popen(command_process, shell=True)  # popen necessary for parallel processing
+    proc = subprocess.Popen(command_process.split(" "))  # popen necessary for parallel processing
     return proc
 
 
@@ -74,6 +76,6 @@ def lancer_process_chunk_segment(base_name: str, segment_number: int, number_cor
     # Generate average
     command_process = "processchunks -n 13 -g -P -c " + base_name_with_segment + ".cmds localhost:" + str(
         number_core) + " " + base_name_with_segment
-    proc = subprocess.Popen(command_process, shell=True)  # popen necessary for parallel processing
+    proc = subprocess.Popen(command_process.split(" "))  # popen necessary for parallel processing
     os.chdir("..")
     return proc
