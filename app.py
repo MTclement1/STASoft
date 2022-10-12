@@ -13,7 +13,6 @@ import math
 # Possibly using shutil.which and replace all command with their direct path
 
 
-
 def round_to_even(nombre):
     return round(nombre / 2.0) * 2
 
@@ -74,7 +73,7 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
     number_of_search = len(phi.split(","))
     tilt_angles = (0, 0)
 
-    if not glob.glob(os.path.dirname(path_tomo)+'/*DualAxisMask.mrc'):
+    if not glob.glob(os.path.dirname(path_tomo) + '/*DualAxisMask.mrc'):
         try:
             tilt_angles = fcm.get_tilt_range(glob.glob(os.path.dirname(path_tomo) + '/*.tlt')[0])
         except IndexError:
@@ -82,7 +81,7 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
             exit(2)
     else:
         try:
-            tilt_angles = os.path.abspath(glob.glob(os.path.dirname(path_tomo)+'/*DualAxisMask.mrc')[0])
+            tilt_angles = os.path.abspath(glob.glob(os.path.dirname(path_tomo) + '/*DualAxisMask.mrc')[0])
         except IndexError:
             print("Could not find any file following the structure : *DualAxisMask.mrc in tomogram folder please "
                   "fix and retry\n")
@@ -191,7 +190,15 @@ def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_o
 def run(number_core, seg_only):
     # os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa") # For debugging only
     base_name_file = input("Enter the basename. For example : MTa will create MTa_S1, MTa_S2, etc... \n")
-    nb_of_segment = int(input("Enter how many segment you want to generate :\n"))
+    particle_per_seg = int(input("Enter the minimum particle per segments :\n"))
+    total_particle = 0
+    try:
+        total_particle = fcm.get_number_of_particle(glob.glob(os.getcwd() + "/*RefP*.csv")[0])
+    except IndexError:
+        print("Could not find any motiv list following the structure name : *RefP*.csv please fix and retry\n")
+        exit(2)
+    nb_of_segment = math.floor(total_particle / particle_per_seg)
+    print("Generating {} segments of at least {} particles.\n".format(nb_of_segment, particle_per_seg))
     prm_path = "./" + base_name_file + ".prm"  # It is also possible to have all prm loading with *.prm
     ref_lines = fcm.open_file(prm_path)
     all_procs = []
