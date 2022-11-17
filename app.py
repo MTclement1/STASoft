@@ -215,7 +215,7 @@ def run(number_core, seg_only, no_seg):
     else:
         print("Generating segments using {}.prm file...".format(base_name_file))
 
-    if not seg_only:
+    if not no_seg:
         # First create all prm files then start the averaging
         cpm.create_segments(nb_of_segment, base_name_file)
         motiv_path = ""
@@ -250,7 +250,7 @@ def run(number_core, seg_only, no_seg):
     for process in all_procs:
         process.communicate(timeout=3600)
     print("All segments have been generated")
-    if seg_only:
+    if no_seg:
         exit(0)
 
     show_surface = int(input("Would you like to see all isosurface ? 1 for yes 2 for no\n"))
