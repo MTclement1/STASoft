@@ -187,7 +187,7 @@ def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_o
     return lines_to_change
 
 
-def run(number_core, seg_only):
+def run(number_core, seg_only, no_seg):
     # os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa") # For debugging only
     base_name_file = input("Enter the basename. For example : MTa will create MTa_S1, MTa_S2, etc... \n")
     particle_per_seg = int(input("Enter the minimum particle per segments :\n"))
@@ -215,40 +215,43 @@ def run(number_core, seg_only):
     else:
         print("Generating segments using {}.prm file...".format(base_name_file))
 
-    # First create all prm files then start the averaging
-    cpm.create_segments(nb_of_segment, base_name_file)
-    motiv_path = ""
-    try:
-        motiv_path = os.path.relpath(glob.glob(os.getcwd() + "/segment1/*RefP*.csv")[0])
-    except IndexError:
-        print("Could not find any file following the structure : *RefP*.csv in segment 1 folder, please fix\n")
-        exit(2)
-    number_of_particle = fcm.get_number_of_particle(motiv_path)
-    nbr_search = len(ref_lines[fcm.search_string_in_file(ref_lines, "dPhi = ")].split(","))
-    tomo_path = ref_lines[fcm.search_string_in_file(ref_lines, "fnVolume = ")].split("'")[1]
-    pixel_spacing, tomo_path = fcm.determine_pixel_spacing(tomo_path)
-    volume_sz = round_to_even(64 * 8.0 / pixel_spacing)
-    for i in range(1, nb_of_segment + 1):
-        lines_to_change = generate_segments_prm(ref_lines, base_name_file, i, number_core, number_of_particle,
-                                                nbr_search, tomo_path, volume_sz, pixel_spacing)
-        new_file = modifier_prm(ref_lines, lines_to_change)
-        base_name_with_segment = base_name_file + '_S' + str(i)
-        new_file_path = "./segment{number}/{filename}.prm".format(number=i, filename=base_name_with_segment)
-        fcm.write_file(new_file_path, new_file)
+    if not seg_only:
+        # First create all prm files then start the averaging
+        cpm.create_segments(nb_of_segment, base_name_file)
+        motiv_path = ""
+        try:
+            motiv_path = os.path.relpath(glob.glob(os.getcwd() + "/segment1/*RefP*.csv")[0])
+        except IndexError:
+            print("Could not find any file following the structure : *RefP*.csv in segment 1 folder, please fix\n")
+            exit(2)
+        number_of_particle = fcm.get_number_of_particle(motiv_path)
+        nbr_search = len(ref_lines[fcm.search_string_in_file(ref_lines, "dPhi = ")].split(","))
+        tomo_path = ref_lines[fcm.search_string_in_file(ref_lines, "fnVolume = ")].split("'")[1]
+        pixel_spacing, tomo_path = fcm.determine_pixel_spacing(tomo_path)
+        volume_sz = round_to_even(64 * 8.0 / pixel_spacing)
+        for i in range(1, nb_of_segment + 1):
+            lines_to_change = generate_segments_prm(ref_lines, base_name_file, i, number_core, number_of_particle,
+                                                    nbr_search, tomo_path, volume_sz, pixel_spacing)
+            new_file = modifier_prm(ref_lines, lines_to_change)
+            base_name_with_segment = base_name_file + '_S' + str(i)
+            new_file_path = "./segment{number}/{filename}.prm".format(number=i, filename=base_name_with_segment)
+            fcm.write_file(new_file_path, new_file)
 
-    # Averaging
+        # Averaging
 
-    for i in range(1, nb_of_segment + 1):
-        base_name_with_segment = base_name_file + '_S' + str(i)
-        cpm.lancer_parser_segment(base_name_with_segment, i)
-        # ProcessChunk will not start until parser has finished
-        all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
+        for i in range(1, nb_of_segment + 1):
+            base_name_with_segment = base_name_file + '_S' + str(i)
+            cpm.lancer_parser_segment(base_name_with_segment, i)
+            # ProcessChunk will not start until parser has finished
+            all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
 
     # Wait for all process to end before ending program
 
     for process in all_procs:
         process.communicate(timeout=3600)
     print("All segments have been generated")
+    if seg_only:
+        exit(0)
 
     show_surface = int(input("Would you like to see all isosurface ? 1 for yes 2 for no\n"))
     if show_surface == 1:
