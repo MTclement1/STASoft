@@ -43,4 +43,23 @@ BASE_PRM = ['\n', "fnVolume = {'../CG2_3_10_bin4.mrc'}\n",
             '\n', 'cylinderHeight = 64\n',
             '\n', 'maskBlurStdDev = 2\n',
             '\n', 'flgVolNamesAreTemplates = 0\n',
-            '\n', 'edgeShift = 0\n']
+            '\n', 'edgeShift = 0\n',
+            '\n', 'excludeList = []\n',  # excludeList: A list of particle numbers to be excluded.
+            '\n', 'includeList = []\n',  # includeList: A list of particle numbers to be included.
+            '\n', 'flgElevationCompensation = 0\n',  # If 1 (default = 0), adjust correlation scores for variation
+            # with elevation angle during particle selection.
+            '\n', 'flgFRM = 1\n',  # flgFRM: If 1 (default) allow fast rotational matching when applicable.
+            '\n', 'flgAllowMaskedCorrelation = 1\n',  # ff 1 (default = 0) use a slower cross-correlation calculation
+            # which may be slightly more accurate when masking is in use.
+            '\n', 'flgFilterRefOnly = 0\n',  # If 1 (default = 0), during alignment apply frequency filtration
+            # to the reference only, rather than both reference and particles.
+            '\n', 'flgSearchAlongParticleAxes = 0\n',  # If 1 (default = 0), search distances will be (approximately)
+            # along particle rather than tomogram coordinates.
+            '\n', 'flgFPWedgeMask = 0\n',  # flgFPWedgeMask: If 1 (default = 0), allow floating point wedge masks.
+            '\n', 'yAxisSymmetry = []\n',  # yAxisSymmetry: A per iterations list of axial symmetry search orders.
+            # Iterations with entries N > 1 will perform a rotation only search
+            # about tomogram Y for axial symmetry.
+            '\n', 'flgUseExtractedParticles = 0\n',  # Use previously extracted particles (rather than automatically
+            # extracting on the fly).
+            '\n', 'flgCNMasking = 1']  # flgCNMasking: If 1 (default), apply a spherical real-space mask during
+# symmetric averaging.
