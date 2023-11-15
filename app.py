@@ -38,37 +38,45 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
         exit(2)
     choice = int(input("Do you want to add another search ? 0 for no, 1 for theta only, 2 for psi only, 3 for both\n"))
     lines_to_change = []
+    pixel_size, path_tomo = fcm.determine_pixel_spacing("../tomogram.mrc")
     phi = ""
-    sradius = 'searchRadius = {[5], [4], [2], [1]}\n'
+    sradius = ('searchRadius = {[' + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
+               + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
     if choice == 0:
         phi = 'dPhi = {-9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
-        sradius = 'searchRadius = {[5], [4], [2], [1]}\n'
+        sradius = ('searchRadius = {[' + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
+                   + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
     elif choice == 1:
         phi = 'dPhi = {0:1:0, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         psi = 'dPsi = {0:1:0, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         theta = 'dTheta = {-15:5:15, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
-        sradius = 'searchRadius = {[6], [5], [4], [2], [1]}\n'
+        sradius = ('searchRadius = {[' + str(round(6 * 8 / pixel_size)) + '],['
+                   + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
+                   + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
         lines_to_change.append((psi, fcm.search_string_in_file(ref_lines, "dPsi = ")))
         lines_to_change.append((theta, fcm.search_string_in_file(ref_lines, "dTheta = ")))
     elif choice == 2:
         phi = 'dPhi = {0:1:0, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         theta = 'dTheta = {0:1:0, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         psi = 'dPsi = {-15:5:15, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
-        sradius = 'searchRadius = {[6], [5], [4], [2], [1]}\n'
+        sradius = ('searchRadius = {[' + str(round(6 * 8 / pixel_size)) + '],['
+                   + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
+                   + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
         lines_to_change.append((psi, fcm.search_string_in_file(ref_lines, "dPsi = ")))
         lines_to_change.append((theta, fcm.search_string_in_file(ref_lines, "dTheta = ")))
     elif choice == 3:
         phi = 'dPhi = {0:1:0, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         theta = 'dTheta = {-15:5:15, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         psi = 'dPsi = {-15:5:15, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
-        sradius = 'searchRadius = {[6], [5], [4], [2], [1]}\n'
+        sradius = ('searchRadius = {[' + str(round(6 * 8 / pixel_size)) + '],['
+                   + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
+                   + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
         lines_to_change.append((psi, fcm.search_string_in_file(ref_lines, "dPsi = ")))
         lines_to_change.append((theta, fcm.search_string_in_file(ref_lines, "dTheta = ")))
     else:
         print("This is not a possible answer to the question. Program will exit")
         exit(1)
 
-    pixel_size, path_tomo = fcm.determine_pixel_spacing("../tomogram.mrc")
     volume_size = round_to_even(64 * 8.0 / pixel_size)
     number_of_search = len(phi.split(","))
     tilt_angles = (0, 0)
@@ -117,7 +125,7 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
     lines_to_change.append(("lowCutoff = {" + "[0, 0.05], " * (number_of_search - 1) + "[0, 0.05]}\n",
                             fcm.search_string_in_file(ref_lines, "lowCutoff =")))
     lines_to_change.append(("hiCutoff = {" + "[0.1, 0.05], " * (number_of_search - 1) + "[0.1, 0.05]}\n",
-                            fcm.search_string_in_file(ref_lines, "hiCutoff =")))
+                            fcm.search_string_in_file(ref_lines, "hiCutoff =")))  # Potentially adapt for bin1
     lines_to_change.append(("refThreshold = {" + (str(number_of_particle) + ", ") * (number_of_search - 1) + str(
         number_of_particle) + "}\n",
                             fcm.search_string_in_file(ref_lines, "refThreshold = ")))

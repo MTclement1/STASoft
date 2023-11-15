@@ -8,10 +8,10 @@ from optparse import OptionParser
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.set_defaults(number_core=12)
+    parser.set_defaults(number_core=8)
     parser.set_defaults(seg_only=False)
     parser.add_option("-c", "--core", dest="number_core", type="int", help="input number of true core on your "
-                                                                           "machine, default is 12", metavar="INT")
+                                                                           "machine, default is 8", metavar="INT")
     parser.add_option("-s", "--segments", action="store_true", dest="seg_only", help="Assume that the whole MT STA is "
                                                                                      "already generated and only "
                                                                                      "generate segments")
