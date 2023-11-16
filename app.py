@@ -38,37 +38,45 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
         exit(2)
     choice = int(input("Do you want to add another search ? 0 for no, 1 for theta only, 2 for psi only, 3 for both\n"))
     lines_to_change = []
+    pixel_size, path_tomo = fcm.determine_pixel_spacing("../tomogram.mrc")
     phi = ""
-    sradius = 'searchRadius = {[5], [4], [2], [1]}\n'
+    sradius = ('searchRadius = {[' + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
+               + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
     if choice == 0:
         phi = 'dPhi = {-9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
-        sradius = 'searchRadius = {[5], [4], [2], [1]}\n'
+        sradius = ('searchRadius = {[' + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
+                   + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
     elif choice == 1:
         phi = 'dPhi = {0:1:0, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         psi = 'dPsi = {0:1:0, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         theta = 'dTheta = {-15:5:15, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
-        sradius = 'searchRadius = {[6], [5], [4], [2], [1]}\n'
+        sradius = ('searchRadius = {[' + str(round(6 * 8 / pixel_size)) + '],['
+                   + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
+                   + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
         lines_to_change.append((psi, fcm.search_string_in_file(ref_lines, "dPsi = ")))
         lines_to_change.append((theta, fcm.search_string_in_file(ref_lines, "dTheta = ")))
     elif choice == 2:
         phi = 'dPhi = {0:1:0, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         theta = 'dTheta = {0:1:0, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         psi = 'dPsi = {-15:5:15, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
-        sradius = 'searchRadius = {[6], [5], [4], [2], [1]}\n'
+        sradius = ('searchRadius = {[' + str(round(6 * 8 / pixel_size)) + '],['
+                   + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
+                   + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
         lines_to_change.append((psi, fcm.search_string_in_file(ref_lines, "dPsi = ")))
         lines_to_change.append((theta, fcm.search_string_in_file(ref_lines, "dTheta = ")))
     elif choice == 3:
         phi = 'dPhi = {0:1:0, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         theta = 'dTheta = {-15:5:15, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         psi = 'dPsi = {-15:5:15, -9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
-        sradius = 'searchRadius = {[6], [5], [4], [2], [1]}\n'
+        sradius = ('searchRadius = {[' + str(round(6 * 8 / pixel_size)) + '],['
+                   + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
+                   + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
         lines_to_change.append((psi, fcm.search_string_in_file(ref_lines, "dPsi = ")))
         lines_to_change.append((theta, fcm.search_string_in_file(ref_lines, "dTheta = ")))
     else:
         print("This is not a possible answer to the question. Program will exit")
         exit(1)
 
-    pixel_size, path_tomo = fcm.determine_pixel_spacing("../tomogram.mrc")
     volume_size = round_to_even(64 * 8.0 / pixel_size)
     number_of_search = len(phi.split(","))
     tilt_angles = (0, 0)
@@ -117,7 +125,7 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
     lines_to_change.append(("lowCutoff = {" + "[0, 0.05], " * (number_of_search - 1) + "[0, 0.05]}\n",
                             fcm.search_string_in_file(ref_lines, "lowCutoff =")))
     lines_to_change.append(("hiCutoff = {" + "[0.1, 0.05], " * (number_of_search - 1) + "[0.1, 0.05]}\n",
-                            fcm.search_string_in_file(ref_lines, "hiCutoff =")))
+                            fcm.search_string_in_file(ref_lines, "hiCutoff =")))  # Potentially adapt for bin1
     lines_to_change.append(("refThreshold = {" + (str(number_of_particle) + ", ") * (number_of_search - 1) + str(
         number_of_particle) + "}\n",
                             fcm.search_string_in_file(ref_lines, "refThreshold = ")))
@@ -187,7 +195,7 @@ def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_o
     return lines_to_change
 
 
-def run(number_core, seg_only):
+def run(number_core, seg_only, no_seg):
     # os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa") # For debugging only
     base_name_file = input("Enter the basename. For example : MTa will create MTa_S1, MTa_S2, etc... \n")
     particle_per_seg = int(input("Enter the minimum particle per segments :\n"))
@@ -215,40 +223,43 @@ def run(number_core, seg_only):
     else:
         print("Generating segments using {}.prm file...".format(base_name_file))
 
-    # First create all prm files then start the averaging
-    cpm.create_segments(nb_of_segment, base_name_file)
-    motiv_path = ""
-    try:
-        motiv_path = os.path.relpath(glob.glob(os.getcwd() + "/segment1/*RefP*.csv")[0])
-    except IndexError:
-        print("Could not find any file following the structure : *RefP*.csv in segment 1 folder, please fix\n")
-        exit(2)
-    number_of_particle = fcm.get_number_of_particle(motiv_path)
-    nbr_search = len(ref_lines[fcm.search_string_in_file(ref_lines, "dPhi = ")].split(","))
-    tomo_path = ref_lines[fcm.search_string_in_file(ref_lines, "fnVolume = ")].split("'")[1]
-    pixel_spacing, tomo_path = fcm.determine_pixel_spacing(tomo_path)
-    volume_sz = round_to_even(64 * 8.0 / pixel_spacing)
-    for i in range(1, nb_of_segment + 1):
-        lines_to_change = generate_segments_prm(ref_lines, base_name_file, i, number_core, number_of_particle,
-                                                nbr_search, tomo_path, volume_sz, pixel_spacing)
-        new_file = modifier_prm(ref_lines, lines_to_change)
-        base_name_with_segment = base_name_file + '_S' + str(i)
-        new_file_path = "./segment{number}/{filename}.prm".format(number=i, filename=base_name_with_segment)
-        fcm.write_file(new_file_path, new_file)
+    if not no_seg:
+        # First create all prm files then start the averaging
+        cpm.create_segments(nb_of_segment, base_name_file)
+        motiv_path = ""
+        try:
+            motiv_path = os.path.relpath(glob.glob(os.getcwd() + "/segment1/*RefP*.csv")[0])
+        except IndexError:
+            print("Could not find any file following the structure : *RefP*.csv in segment 1 folder, please fix\n")
+            exit(2)
+        number_of_particle = fcm.get_number_of_particle(motiv_path)
+        nbr_search = len(ref_lines[fcm.search_string_in_file(ref_lines, "dPhi = ")].split(","))
+        tomo_path = ref_lines[fcm.search_string_in_file(ref_lines, "fnVolume = ")].split("'")[1]
+        pixel_spacing, tomo_path = fcm.determine_pixel_spacing(tomo_path)
+        volume_sz = round_to_even(64 * 8.0 / pixel_spacing)
+        for i in range(1, nb_of_segment + 1):
+            lines_to_change = generate_segments_prm(ref_lines, base_name_file, i, number_core, number_of_particle,
+                                                    nbr_search, tomo_path, volume_sz, pixel_spacing)
+            new_file = modifier_prm(ref_lines, lines_to_change)
+            base_name_with_segment = base_name_file + '_S' + str(i)
+            new_file_path = "./segment{number}/{filename}.prm".format(number=i, filename=base_name_with_segment)
+            fcm.write_file(new_file_path, new_file)
 
-    # Averaging
+        # Averaging
 
-    for i in range(1, nb_of_segment + 1):
-        base_name_with_segment = base_name_file + '_S' + str(i)
-        cpm.lancer_parser_segment(base_name_with_segment, i)
-        # ProcessChunk will not start until parser has finished
-        all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
+        for i in range(1, nb_of_segment + 1):
+            base_name_with_segment = base_name_file + '_S' + str(i)
+            cpm.lancer_parser_segment(base_name_with_segment, i)
+            # ProcessChunk will not start until parser has finished
+            all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
 
     # Wait for all process to end before ending program
 
     for process in all_procs:
         process.communicate(timeout=3600)
     print("All segments have been generated")
+    if no_seg:
+        exit(0)
 
     show_surface = int(input("Would you like to see all isosurface ? 1 for yes 2 for no\n"))
     if show_surface == 1:
