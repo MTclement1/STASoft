@@ -2,6 +2,7 @@ import subprocess
 import tkinter as tk
 import os
 from tkinter import filedialog
+import datetime
 
 
 def open_file(path):
@@ -62,7 +63,9 @@ def determine_pixel_spacing(tomo_path):
     if not os.path.exists(tomo_path):
         root = tk.Tk()
         root.withdraw()
-        tomo_path = os.path.relpath(filedialog.askopenfilename(initialdir=os.getcwd(), ))
+        tomo_path = os.path.relpath(filedialog.askopenfilename(initialdir='../',
+                                                               filetypes=[('Volumes', '.mrc'), ('All types', '*.*')],
+                                                               title="Please select the tomogram volume file"))
         root.update()
         root.destroy()
     command = "header -p " + tomo_path
@@ -79,3 +82,24 @@ def get_tilt_range(path):
         min_angle = lines[0].rstrip()[1:]
         max_angle = lines[len(lines) - 1].rstrip()[2:]
     return min_angle, max_angle
+
+
+def log_file_append(message, log_file_path='./logfile_except_chunks.log'):
+    """
+    Create a local log file and append log messages to it.
+
+    Parameters:
+    - message (str): Log message to be appended.
+    - log_file_path (str): Path to the log file. Default is 'logfile.log'.
+    """
+    # Get the current timestamp
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Log message format: [TIMESTAMP] Message
+    log_message = f"[{timestamp}] {message}\n"
+
+    # Open the log file in append mode or create if it doesn't exist
+    with open(log_file_path, 'a') as log_file:
+        # Append the log message to the file
+        log_file.write(log_message)
+        log_file.close()

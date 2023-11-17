@@ -1,6 +1,7 @@
-import subprocess
-import os
 import glob
+import os
+import subprocess
+import backend.file_content_module as fcm
 
 
 def create_segments(numberOfSegment, baseName):
@@ -8,16 +9,12 @@ def create_segments(numberOfSegment, baseName):
     :param numberOfSegment: int
     :param baseName: string
     """
-    path_to_mtv_list = ""
-    try:
-        path_to_mtv_list = os.path.relpath(glob.glob("*RefP*.csv")[0])
-    except IndexError:
-        print("Could not find any file following the structure : *RefP*.csv please fix and retry\n")
-        exit(2)
+    path_to_mtv_list = os.path.relpath(glob.glob("*RefP*.csv")[0])
+
     command = "splitIntoNSegments {nbr} {name}_PtsAdded_Twisted.mod {mtv}".format(nbr=numberOfSegment, name=baseName,
                                                                                   mtv=path_to_mtv_list)
-
-    subprocess.run(command.split(" "))
+    result = subprocess.run(command.split(" "), stdout=subprocess.PIPE, text=True)
+    fcm.log_file_append(result)
 
 
 def lancer_parser_segment(base_name_with_segment, segment_number):
@@ -32,7 +29,9 @@ def lancer_parser_segment(base_name_with_segment, segment_number):
 
     # Parser
     command_parser = "prmParser " + base_name_with_segment + ".prm"
-    subprocess.run(command_parser.split(" "))  # should be waiting before doing next (independant of shell = True)
+    result = subprocess.run(command_parser.split(" "), stdout=subprocess.PIPE,
+                            text=True)  # should be waiting before doing next (independant of shell = True)
+    fcm.log_file_append(result)
     os.chdir("..")
     return True
 
@@ -44,7 +43,9 @@ def lancer_parser(base_name):
     """
     # Parser
     command_parser = "prmParser " + base_name + ".prm"
-    subprocess.run(command_parser.split(" "))  # should be waiting before doing next (independant of shell = True)
+    result = subprocess.run(command_parser.split(" "), stdout=subprocess.PIPE, text=True)
+    # should be waiting before doing next (independant of shell = True)
+    fcm.log_file_append(result)
     return True
 
 
@@ -55,9 +56,11 @@ def lancer_process_chunk_fullmt(base_name: str, number_core):
     :return: a pointer to a stream
     """
     # Generate average
-    command_process = "processchunks -g -P -c " + base_name + ".cmds localhost:" + str(
+    command_process = "processchunks -n 18 -g -P " + base_name + ".cmds localhost:" + str(
         number_core) + " " + base_name
-    proc = subprocess.Popen(command_process.split(" "))  # popen necessary for parallel processing
+    proc = subprocess.Popen(command_process.split(" "), preexec_fn=os.setpgrp,
+                            stdout=subprocess.PIPE)  # popen necessary for parallel processing
+
     return proc
 
 
@@ -72,10 +75,10 @@ def lancer_process_chunk_segment(base_name: str, segment_number: int, number_cor
     working_dir = os.getcwd() + '/{}'.format("segment" + str(segment_number))
     # User must be in folder containing segment folder
     os.chdir(working_dir)  # Number of processor to use for the command.
-
+    command_process = ("processchunks -n 18 -g -P " + base_name_with_segment + ".cmds localhost:"
+                       + str(number_core) + " " + base_name_with_segment)
     # Generate average
-    command_process = "processchunks -n 13 -g -P -c " + base_name_with_segment + ".cmds localhost:" + str(
-        number_core) + " " + base_name_with_segment
-    proc = subprocess.Popen(command_process.split(" "))  # popen necessary for parallel processing
+    proc = subprocess.Popen(command_process.split(" "), preexec_fn=os.setpgrp,
+                            stdout=subprocess.PIPE)  # popen necessary for parallel processing
     os.chdir("..")
     return proc

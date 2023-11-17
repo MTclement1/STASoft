@@ -1,6 +1,6 @@
 # This file stocks default parameters for PEET.
 
-BASE_PRM = ['\n', "fnVolume = {'../CG2_3_10_bin4.mrc'}\n",
+BASE_PRM = ['\n', "fnVolume = {'path_to_mrc.mrc}\n",
             '\n', "fnModParticle = {'MTa_PtsAdded_Twisted.mod'}\n",
             '\n', "initMOTL = {'MTa_PtsAddedRefP55_initMOTL.csv'}\n",
             '\n', 'tiltRange = {[-56.18, 56.04]}\n',

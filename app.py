@@ -6,11 +6,27 @@ import subprocess
 import glob
 import time
 import math
-
+import signal
 
 # TODO
 # Graphical interface
 # Possibly using shutil.which and replace all command with their direct path
+
+
+def terminate_processes(process_list):
+    for process in process_list:
+        try:
+            # process.terminate()
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        except ProcessLookupError:
+            # Handle the case where the process is already terminated
+            pass
+
+
+def send_special_key(process, key):
+    # Send the key to the subprocess
+    process.stdin.write(key.encode())
+    process.stdin.flush()
 
 
 def round_to_even(nombre):
@@ -25,23 +41,22 @@ def modifier_prm(lines, lines_to_change):
 
 
 def open_average(path_to_avg):
-    commandToRun = ["3dmod", "-V", "-E", "U ", path_to_avg]
-    subprocess.run(commandToRun)
+    command_to_run = ["3dmod", "-V", "-E", "U ", path_to_avg]
+    result = subprocess.run(command_to_run, stdout=subprocess.PIPE, text=True)
+    fcm.log_file_append(message=result.stdout)
 
 
-def generate_main_mt_prm(ref_lines, base_name, number_cpu):
-    number_of_particle = 0
-    try:
-        number_of_particle = fcm.get_number_of_particle(glob.glob(os.getcwd() + "/*RefP*.csv")[0])
-    except IndexError:
-        print("Could not find any file following the structure : *RefP*.csv please fix and retry\n")
-        exit(2)
-    choice = int(input("Do you want to add another search ? 0 for no, 1 for theta only, 2 for psi only, 3 for both\n"))
+def generate_main_mt_prm(ref_lines, base_name, number_cpu, number_of_particle, pixel_size, path_tomo):
     lines_to_change = []
-    pixel_size, path_tomo = fcm.determine_pixel_spacing("../tomogram.mrc")
+    cpu = math.ceil(number_of_particle / number_cpu)
     phi = ""
     sradius = ('searchRadius = {[' + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
                + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
+    choice = int(input("Do you want to add another search angle (for rotations >= 12 °) ?\n"
+                       "0 for no \n"
+                       "1 for in plane rotation only\n"
+                       "2 for out of plane rotation only\n"
+                       "3 for both\n"))
     if choice == 0:
         phi = 'dPhi = {-9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         sradius = ('searchRadius = {[' + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
@@ -80,7 +95,6 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
     volume_size = round_to_even(64 * 8.0 / pixel_size)
     number_of_search = len(phi.split(","))
     tilt_angles = (0, 0)
-
     if not glob.glob(os.path.dirname(path_tomo) + '/*DualAxisMask.mrc'):
         try:
             tilt_angles = fcm.get_tilt_range(glob.glob(os.path.dirname(path_tomo) + '/*.tlt')[0])
@@ -94,18 +108,9 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
             print("Could not find any file following the structure : *DualAxisMask.mrc in tomogram folder please "
                   "fix and retry\n")
             exit(2)
-    path_mod = ""
-    try:
-        path_mod = os.path.relpath(glob.glob(os.getcwd() + "/*Twisted.mod")[0])
-    except IndexError:
-        print("Could not find any file following the structure : *Twisted.mod in MT folder, please fix\n")
-        exit(2)
-    path_motiv = ""
-    try:
-        path_motiv = os.path.relpath(glob.glob(os.getcwd() + "/*initMOTL.csv")[0])
-    except IndexError:
-        print("Could not find any file following the structure : *initMOTL.csv in MT folder, please fix\n")
-        exit(2)
+    path_mod = os.path.relpath(glob.glob(os.getcwd() + "/*Twisted.mod")[0])
+    path_motiv = os.path.relpath(glob.glob(os.getcwd() + "/*initMOTL.csv")[0])
+
     lines_to_change.append(("fnVolume = {'" + path_tomo + "'}\n",
                             fcm.search_string_in_file(ref_lines, "fnVolume = ")))
     lines_to_change.append(("fnModParticle = {'" + path_mod + "'}\n",
@@ -141,7 +146,7 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
                             fcm.search_string_in_file(ref_lines, "szVol = ")))
     lines_to_change.append(("lstThresholds = " + "[{nbr}:{nbr}:{nbr}]".format(nbr=number_of_particle) + "\n",
                             fcm.search_string_in_file(ref_lines, "lstThresholds = ")))
-    lines_to_change.append(("particlePerCPU = " + str(number_cpu) + "\n",
+    lines_to_change.append(("particlePerCPU = " + str(cpu) + "\n",
                             fcm.search_string_in_file(ref_lines, "particlePerCPU = ")))
     lines_to_change.append(("insideMaskRadius = " + str(round(10 * 8.0 / pixel_size)) + "\n",
                             fcm.search_string_in_file(ref_lines, "insideMaskRadius = ")))
@@ -154,19 +159,9 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu):
 
 def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_of_particle, number_of_search,
                           tomo_path, volume_size, pixel_spacing):
-    motiv_path = ""
-    try:
-        motiv_path = os.path.basename(glob.glob(os.getcwd() + "/segment{}/*RefP*.csv".format(segment_number))[0])
-    except IndexError:
-        print("Could not find any file following the structure : *RefP*.csv in segment folder, please fix\n")
-        exit(2)
-    mod_path = ""
-    try:
-        mod_path = os.path.basename(glob.glob(os.getcwd() + "/segment{}/*Twisted.mod".format(segment_number))[0])
-    except IndexError:
-        print("Could not find any file following the structure : *Twisted.mod in segment folder, please fix\n")
-        exit(2)
-    CPU = math.ceil(number_of_particle / number_cpu)
+    motiv_path = os.path.basename(glob.glob(os.getcwd() + "/segment{}/*RefP*.csv".format(segment_number))[0])
+    mod_path = os.path.basename(glob.glob(os.getcwd() + "/segment{}/*Twisted.mod".format(segment_number))[0])
+    cpu = math.ceil(number_of_particle / number_cpu)
     lines_to_change = [("fnOutput = '{}_S{}'\n".format(base_name, segment_number),
                         fcm.search_string_in_file(lines, "fnOutput = ")),
                        ("fnModParticle = {'" + mod_path + "'}\n",
@@ -190,81 +185,111 @@ def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_o
                         fcm.search_string_in_file(lines, "lstThresholds = ")),
                        ("fnVolume = {'../" + tomo_path + "'}\n",
                         fcm.search_string_in_file(lines, "fnVolume = ")),
-                       ("particlePerCPU = " + str(CPU) + "\n",
+                       ("particlePerCPU = " + str(cpu) + "\n",
                         fcm.search_string_in_file(lines, "particlePerCPU = "))]
     return lines_to_change
 
 
 def run(number_core, seg_only, no_seg):
     # os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa") # For debugging only
-    base_name_file = input("Enter the basename. For example : MTa will create MTa_S1, MTa_S2, etc... \n")
-    particle_per_seg = int(input("Enter the minimum particle per segments :\n"))
-    total_particle = 0
-    try:
-        total_particle = fcm.get_number_of_particle(glob.glob(os.getcwd() + "/*RefP*.csv")[0])
-    except IndexError:
-        print("Could not find any motiv list following the structure name : *RefP*.csv please fix and retry\n")
-        exit(2)
-    nb_of_segment = math.floor(total_particle / particle_per_seg)
-    print("Generating {} segments of at least {} particles.\n".format(nb_of_segment, particle_per_seg))
-    prm_path = "./" + base_name_file + ".prm"  # It is also possible to have all prm loading with *.prm
-    ref_lines = fcm.open_file(prm_path)
+    path_to_mtv_list = ""
     all_procs = []
-    if ref_lines is None:
-        print("{} could not be found, loading default prm...\n".format(prm_path))
-        ref_lines = dft.BASE_PRM
-        lines_to_change = generate_main_mt_prm(ref_lines, base_name_file, number_core)
-        new_prm = modifier_prm(ref_lines, lines_to_change)
-        fcm.write_file(prm_path, new_prm)
-        if not seg_only:
-            cpm.lancer_parser(base_name_file)
-            all_procs.append(cpm.lancer_process_chunk_fullmt(base_name_file, number_core))
-        ref_lines = fcm.open_file(prm_path)  # Now that the new prm exist we can load it for segments
-    else:
-        print("Generating segments using {}.prm file...".format(base_name_file))
-
-    if not no_seg:
-        # First create all prm files then start the averaging
-        cpm.create_segments(nb_of_segment, base_name_file)
-        motiv_path = ""
+    try:
         try:
-            motiv_path = os.path.relpath(glob.glob(os.getcwd() + "/segment1/*RefP*.csv")[0])
+            path_to_mtv_list = os.path.relpath(glob.glob("*RefP*.csv")[0])
         except IndexError:
-            print("Could not find any file following the structure : *RefP*.csv in segment 1 folder, please fix\n")
+            print("Could not find any motiv list following the structure name : *RefP*.csv please fix and retry\n")
             exit(2)
-        number_of_particle = fcm.get_number_of_particle(motiv_path)
-        nbr_search = len(ref_lines[fcm.search_string_in_file(ref_lines, "dPhi = ")].split(","))
-        tomo_path = ref_lines[fcm.search_string_in_file(ref_lines, "fnVolume = ")].split("'")[1]
-        pixel_spacing, tomo_path = fcm.determine_pixel_spacing(tomo_path)
-        volume_sz = round_to_even(64 * 8.0 / pixel_spacing)
-        for i in range(1, nb_of_segment + 1):
-            lines_to_change = generate_segments_prm(ref_lines, base_name_file, i, number_core, number_of_particle,
-                                                    nbr_search, tomo_path, volume_sz, pixel_spacing)
-            new_file = modifier_prm(ref_lines, lines_to_change)
-            base_name_with_segment = base_name_file + '_S' + str(i)
-            new_file_path = "./segment{number}/{filename}.prm".format(number=i, filename=base_name_with_segment)
-            fcm.write_file(new_file_path, new_file)
+        try:
+            os.path.exists(os.path.relpath(glob.glob("*Twisted.mod")[0]))
+        except IndexError:
+            print('Could not find any model file with name structure : *Twisted.mod please fix and retry \n')
+            exit(2)
 
-        # Averaging
+        # Get basic information on microtubule and tomogram
+        total_particle = fcm.get_number_of_particle(path_to_mtv_list)
+        base_name_file = input("Enter the basename. For example : MTa will create MTa_S1, MTa_S2, etc... \n")
+        pixel_spacing, tomo_path = fcm.determine_pixel_spacing("../tomogram.mrc")
 
-        for i in range(1, nb_of_segment + 1):
-            base_name_with_segment = base_name_file + '_S' + str(i)
-            cpm.lancer_parser_segment(base_name_with_segment, i)
-            # ProcessChunk will not start until parser has finished
-            all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
+        # Determine number of segments
+        if not no_seg:
+            particle_per_seg = int(input("Enter the minimum particle per segments :\n"))
+            nb_of_segment = math.floor(total_particle / particle_per_seg)
+            print("Generating {} segments of at least {} particles.\n".format(nb_of_segment, particle_per_seg))
+            cpm.create_segments(nb_of_segment, base_name_file)
 
-    # Wait for all process to end before ending program
+        # Checking for existing prm file
+        print("Checking for {}.prm...\n".format(base_name_file))
+        prm_path = "./" + base_name_file + ".prm"  # It is also possible to have all prm loading with *.prm
+        ref_lines = fcm.open_file(prm_path)
 
-    for process in all_procs:
-        process.communicate(timeout=3600)
-    print("All segments have been generated")
-    if no_seg:
-        exit(0)
+        if ref_lines is None:
+            print("{} could not be found, loading default prm...\n".format(prm_path))
+            ref_lines = dft.BASE_PRM
+            lines_to_change = generate_main_mt_prm(ref_lines, base_name_file, number_core, total_particle, pixel_spacing, tomo_path)
+            new_prm = modifier_prm(ref_lines, lines_to_change)
+            fcm.write_file(prm_path, new_prm)
+        else:
+            print("Previous prm file found. Using {}.prm...\n".format(base_name_file))
+        ref_lines = fcm.open_file(prm_path)  # Now that a prm file exist we can load it
 
-    show_surface = int(input("Would you like to see all isosurface ? 1 for yes 2 for no\n"))
-    if show_surface == 1:
-        for i in range(1, nb_of_segment + 1):
-            avg_path = glob.glob("./segment{num}/{name}_S{num}_AvgVol_*.mrc".format(num=i, name=base_name_file))[0]
-            open_average(avg_path)
-            time.sleep(1)
-        print("All segments have been opened")
+        # Generating main microtubule if necessary
+        if not seg_only:
+            stop = False
+            try:
+                _ = glob.glob("{base}_AvgVol_*.mrc".format(base=base_name_file))[-1]
+                remake = input("A MT average already exist for the full length, do you want to remake one (with existing "
+                               "prm) ? y/n\n")
+                if remake == 'n' or remake == "no":
+                    stop = True
+            except IndexError:
+                print("No full MT average found, generating one...\n")
+            if not stop:
+                cpm.lancer_parser(base_name_file)
+                all_procs.append(cpm.lancer_process_chunk_fullmt(base_name_file, number_core))
+
+        # Generating segments if authorized
+        if not no_seg:
+
+            # First create all prm files then start the averaging
+            motiv_path = os.path.relpath(glob.glob(os.getcwd() + "/segment1/*RefP*.csv")[0])
+            number_of_particle = fcm.get_number_of_particle(motiv_path)
+            nbr_search = len(ref_lines[fcm.search_string_in_file(ref_lines, "dPhi = ")].split(","))
+            volume_sz = round_to_even(64 * 8.0 / pixel_spacing)
+            for i in range(1, nb_of_segment + 1):
+                lines_to_change = generate_segments_prm(ref_lines, base_name_file, i, number_core, number_of_particle,
+                                                        nbr_search, tomo_path, volume_sz, pixel_spacing)
+                new_file = modifier_prm(ref_lines, lines_to_change)
+                base_name_with_segment = base_name_file + '_S' + str(i)
+                new_file_path = "./segment{number}/{filename}.prm".format(number=i, filename=base_name_with_segment)
+                fcm.write_file(new_file_path, new_file)
+
+            # Averaging
+            for i in range(1, nb_of_segment + 1):
+                base_name_with_segment = base_name_file + '_S' + str(i)
+                cpm.lancer_parser_segment(base_name_with_segment, i)
+                # ProcessChunk will not start until parser has finished
+                all_procs.append(cpm.lancer_process_chunk_segment(base_name_file, i, number_core))
+
+        # Wait for all process to end before ending program
+        for process in all_procs:
+            output, error = process.communicate(timeout=3600)
+            #print(output)
+        print("All segments have been generated\n")
+
+        show_surface = str(input("Would you like to see all isosurface ? y/n\n"))
+        if show_surface == "y" or show_surface == "yes":
+            if not seg_only:
+                avg_path = glob.glob("{base}_AvgVol_*.mrc".format(base=base_name_file))[-1]
+                open_average(avg_path)
+                time.sleep(1)
+            if not no_seg:
+                for i in range(1, nb_of_segment + 1):
+                    avg_path = glob.glob("./segment{num}/{name}_S{num}_AvgVol_*.mrc".format(num=i, name=base_name_file))[0]
+                    open_average(avg_path)
+                    time.sleep(1)
+            print("All isosurfaces have been opened\n")
+    except KeyboardInterrupt:
+        print("Ctrl+C pressed. Terminating processes. If it continues please MANUALLY end processes called "
+              "'processchunks'\n")
+        terminate_processes(all_procs)
