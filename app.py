@@ -31,10 +31,15 @@ def open_average(path_to_avg):
 
 def generate_main_mt_prm(ref_lines, base_name, number_cpu, number_of_particle, pixel_size, path_tomo):
     lines_to_change = []
+    cpu = math.ceil(number_of_particle / number_cpu)
     phi = ""
     sradius = ('searchRadius = {[' + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
                + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
-    choice = int(input("Do you want to add another search ? 0 for no, 1 for theta only, 2 for psi only, 3 for both\n"))
+    choice = int(input("Do you want to add another search angle (for rotations >= 12 °) ?\n"
+                       "0 for no \n"
+                       "1 for in plane rotation only\n"
+                       "2 for out of plane rotation only\n"
+                       "3 for both\n"))
     if choice == 0:
         phi = 'dPhi = {-9:6:9, -4.5:3:4.5, -2.3:1.5:2.3, -1:1:1}\n'
         sradius = ('searchRadius = {[' + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
@@ -124,7 +129,7 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu, number_of_particle, p
                             fcm.search_string_in_file(ref_lines, "szVol = ")))
     lines_to_change.append(("lstThresholds = " + "[{nbr}:{nbr}:{nbr}]".format(nbr=number_of_particle) + "\n",
                             fcm.search_string_in_file(ref_lines, "lstThresholds = ")))
-    lines_to_change.append(("particlePerCPU = " + str(number_cpu) + "\n",
+    lines_to_change.append(("particlePerCPU = " + str(cpu) + "\n",
                             fcm.search_string_in_file(ref_lines, "particlePerCPU = ")))
     lines_to_change.append(("insideMaskRadius = " + str(round(10 * 8.0 / pixel_size)) + "\n",
                             fcm.search_string_in_file(ref_lines, "insideMaskRadius = ")))
@@ -176,7 +181,9 @@ def run(number_core, seg_only, no_seg):
     except IndexError:
         print("Could not find any motiv list following the structure name : *RefP*.csv please fix and retry\n")
         exit(2)
-    if not os.path.exists(os.path.relpath(glob.glob("*Twisted.mod")[0])):
+    try:
+        os.path.exists(os.path.relpath(glob.glob("*Twisted.mod")[0]))
+    except IndexError:
         print('Could not find any model file with name structure : *Twisted.mod please fix and retry \n')
         exit(2)
 
@@ -184,6 +191,7 @@ def run(number_core, seg_only, no_seg):
     total_particle = fcm.get_number_of_particle(path_to_mtv_list)
     base_name_file = input("Enter the basename. For example : MTa will create MTa_S1, MTa_S2, etc... \n")
     pixel_spacing, tomo_path = fcm.determine_pixel_spacing("../tomogram.mrc")
+
     # Determine number of segments
     if not no_seg:
         particle_per_seg = int(input("Enter the minimum particle per segments :\n"))
@@ -211,7 +219,8 @@ def run(number_core, seg_only, no_seg):
         stop = False
         try:
             _ = glob.glob("{base}_AvgVol_*.mrc".format(base=base_name_file))[-1]
-            remake = input("A MT average already exist for the full length, do you want to remake one ? y/n\n")
+            remake = input("A MT average already exist for the full length, do you want to remake one (with existing "
+                           "prm) ? y/n\n")
             if remake == 'n' or remake == "no":
                 stop = True
         except IndexError:
@@ -248,17 +257,16 @@ def run(number_core, seg_only, no_seg):
     for process in all_procs:
         process.communicate(timeout=3600)
     print("All segments have been generated\n")
-    if no_seg:
-        exit(0)
 
-    show_surface = int(input("Would you like to see all isosurface ? y/n\n"))
+    show_surface = str(input("Would you like to see all isosurface ? y/n\n"))
     if show_surface == "y" or show_surface=="yes":
         if not seg_only:
             avg_path = glob.glob("{base}_AvgVol_*.mrc".format(base=base_name_file))[-1]
             open_average(avg_path)
             time.sleep(1)
-        for i in range(1, nb_of_segment + 1):
-            avg_path = glob.glob("./segment{num}/{name}_S{num}_AvgVol_*.mrc".format(num=i, name=base_name_file))[0]
-            open_average(avg_path)
-            time.sleep(1)
+        if not no_seg:
+            for i in range(1, nb_of_segment + 1):
+                avg_path = glob.glob("./segment{num}/{name}_S{num}_AvgVol_*.mrc".format(num=i, name=base_name_file))[0]
+                open_average(avg_path)
+                time.sleep(1)
         print("All isosurfaces have been opened\n")

@@ -62,8 +62,8 @@ def determine_pixel_spacing(tomo_path):
     if not os.path.exists(tomo_path):
         root = tk.Tk()
         root.withdraw()
-        tomo_path = os.path.relpath(filedialog.askopenfilename(initialdir='../' + os.getcwd(),
-                                                               filetypes=[('Volumes', '.mrc')],
+        tomo_path = os.path.relpath(filedialog.askopenfilename(initialdir='../',
+                                                               filetypes=[('Volumes', '.mrc'), ('All types', '*.*')],
                                                                title="Please select the tomogram volume file"))
         root.update()
         root.destroy()
