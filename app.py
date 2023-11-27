@@ -274,7 +274,7 @@ def run(number_core, seg_only, no_seg):
         # Wait for all process to end before ending program
         for process in all_procs:
             output, error = process.communicate(timeout=3600)
-            #print(output)
+            print(output)
         print("All segments have been generated\n")
 
         show_surface = str(input("Would you like to see all isosurface ? y/n\n"))

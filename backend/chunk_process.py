@@ -56,7 +56,7 @@ def lancer_process_chunk_fullmt(base_name: str, number_core):
     :return: a pointer to a stream
     """
     # Generate average
-    command_process = "processchunks -n 18 -g -P " + base_name + ".cmds localhost:" + str(
+    command_process = "processchunks -g -P " + "localhost:" + str(
         number_core) + " " + base_name
     proc = subprocess.Popen(command_process.split(" "), preexec_fn=os.setpgrp,
                             stdout=subprocess.PIPE)  # popen necessary for parallel processing
@@ -75,8 +75,8 @@ def lancer_process_chunk_segment(base_name: str, segment_number: int, number_cor
     working_dir = os.getcwd() + '/{}'.format("segment" + str(segment_number))
     # User must be in folder containing segment folder
     os.chdir(working_dir)  # Number of processor to use for the command.
-    command_process = ("processchunks -n 18 -g -P " + base_name_with_segment + ".cmds localhost:"
-                       + str(number_core) + " " + base_name_with_segment)
+    command_process = "processchunks -n 18 -g -P " + "localhost:" + str(
+        number_core) + " " + base_name_with_segment
     # Generate average
     proc = subprocess.Popen(command_process.split(" "), preexec_fn=os.setpgrp,
                             stdout=subprocess.PIPE)  # popen necessary for parallel processing
