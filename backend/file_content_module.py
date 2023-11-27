@@ -84,14 +84,17 @@ def get_tilt_range(path):
     return min_angle, max_angle
 
 
-def log_file_append(message, log_file_path='./logfile_except_chunks.log'):
+def log_file_append(CompletedProcess, log_file_path='./logfile_except_chunks.log'):
     """
     Create a local log file and append log messages to it.
 
     Parameters:
-    - message (str): Log message to be appended.
+    - CompletedProcess (CompletedProcess): An object returned at the end of subprocess.run command.
     - log_file_path (str): Path to the log file. Default is 'logfile.log'.
     """
+    # Extract the stdout from the CompletedProcess object
+    message = CompletedProcess.stdout.strip()  # Ensure leading/trailing whitespaces are removed
+
     # Get the current timestamp
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
