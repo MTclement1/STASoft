@@ -232,7 +232,7 @@ def run(number_core, seg_only, no_seg):
         if not stop:
             cpm.lancer_parser(base_name_file)
             proc = threading.Thread(target=cpm.lancer_process_chunk_fullmt,
-                                    args=(base_name_file, number_core, lambda: stop_threads))
+                                    args=(base_name_file, number_core, os.getcwd(), lambda: stop_threads, lock))
             all_procs.append(proc)
 
     # Preparing segment threads if authorized
