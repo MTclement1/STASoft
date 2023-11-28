@@ -14,7 +14,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--segments", action="store_true", default=False,
                         help="Assume that the whole MT STA is already generated and only generate segments")
     parser.add_argument("-w", "--whole", action="store_true", default=False, help="Only generate the whole MT")
-    parser.add_argument("-v", "--version", action="version", version='%(prog)s 2.9.1', help="Display version")
+    parser.add_argument("-v", "--version", action="version", version='%(prog)s 2.10', help="Display version")
 
     args = parser.parse_args()
     app.run(args.core, args.segments, args.whole)
