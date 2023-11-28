@@ -1,10 +1,11 @@
 import glob
 import os
 import subprocess
-import progressbar
+import tqdm
 import psutil
 import backend.file_content_module as fcm
 import signal
+import re
 
 
 def kill_proc_tree(pid, sig=signal.SIGTERM, include_parent=True,
@@ -42,10 +43,10 @@ def create_segments(numberOfSegment, baseName):
     fcm.log_file_append(result)
 
 
-def lancer_parser_segment(base_name_with_segment, segment_number, working_dir):
+def lancer_parser_segment(base_name_with_segment, working_dir):
     """ Parse the prm using prmParser from imod to prepare com files for chunk processing
+    :param working_dir: path to directory containing the parameter file for a segment
     :param base_name_with_segment: string
-    :param segment_number: int
     :return: always True
     """
     # User must be in folder containing segment folder
@@ -68,7 +69,6 @@ def lancer_parser(base_name):
     # Parser
     command_parser = "prmParser " + base_name + ".prm"
     result = subprocess.run(command_parser.split(" "), stdout=subprocess.PIPE, text=True)
-    # should be waiting before doing next (independant of shell = True)
     fcm.log_file_append(result)
     return True
 
@@ -87,10 +87,22 @@ def lancer_process_chunk_fullmt(base_name: str, number_core, stop):
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                             universal_newlines=True, start_new_session=True)  # popen necessary for parallel processing
     log = open("TotalLog_MainMT.txt", 'a')
+
+    # Setting the progress bar
+    total_pattern = re.compile(r'\d+ of (\d+) done so far', re.IGNORECASE)
+    segment_bar = tqdm.tqdm(desc=f"Main MT Progress", position=0,
+                            leave=False)
     try:
         for line in proc.stdout:
-            if 'DONE SO FAR' in line or 'pid' in line:  # Customize this condition to print specific lines
-                print("MAIN MT: " + line.lower(), end='')
+            match = total_pattern.search(line)
+            done = False
+            if match and not done:  # When total chunk in known, total is adapted once
+                total = int(match.group(1))
+                segment_bar.total = total
+                segment_bar.refresh()
+                done = True
+            if 'DONE SO FAR' in line:
+                segment_bar.update(1)
             else:
                 log.write(line)
             if stop():
@@ -126,33 +138,39 @@ def lancer_process_chunk_segment(base_name: str, segment_number: int, number_cor
     # User must be in folder containing segment folder. Using a lock to prevent shenanigans when multiple threadings
     lock.acquire()
     os.chdir(wd)
-    print("Before the subprocess is called, I am in " + wd)
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                             universal_newlines=True, start_new_session=True)  # popen necessary for parallel processing
 
     lock.release()
     log = open("TotalLog_Segment" + str(segment_number) + ".txt", 'a')
-    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength, redirect_stdout=True)
+
+    # Setting the progress bar
+    total_pattern = re.compile(r'\d+ of (\d+) done so far', re.IGNORECASE)
+    segment_bar = tqdm.tqdm(desc=f"Segment {segment_number} Progress", position=segment_number,
+                            leave=False)
     try:
-        k = 0
         for line in proc.stdout:
-            if 'DONE SO FAR' in line or 'pid' in line:  # Customize this condition to print specific lines
-                print("SEGMENT " + str(segment_number) + ": " + line.lower(), end='')
-                bar.update(k)
-                k += 1
+            match = total_pattern.search(line)
+            done = False
+            if match and not done:  # When total chunk in known, total is adapted once
+                total = int(match.group(1))
+                segment_bar.total = total
+                segment_bar.refresh()
+                done = True
+            if 'DONE SO FAR' in line:
+                segment_bar.update(1)
             else:
                 log.write(line)
             if stop():
                 raise KeyboardInterrupt
     except KeyboardInterrupt:
         # Handle Ctrl+C gracefully using kill_proc_tree function
+        segment_bar.close()
         print("Ctrl+C received. Terminating process for segment number " + str(segment_number) + ".")
         log.close()
-        # process.terminate()
         print("Proc PID is :" + str(proc.pid))
         gone, alive = kill_proc_tree(proc.pid, signal.SIGKILL)
         for p in alive:
             p.kill()
     finally:
         log.close()
-

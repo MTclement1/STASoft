@@ -5,7 +5,7 @@ Requirements:
     - Python3
     - Imod PEET installed and on path. version > 4.12.56
     - Multiprocessing setup on IMOD, or use -c 1
-    - psutil python package
+    - psutil and tqdm python packages
 
 Download the full folder from github and save it anywhere you want.
 You can make an alias such as "alias STAsoft='python3 /home/STASoft'".

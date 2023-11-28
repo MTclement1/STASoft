@@ -1,3 +1,5 @@
+import progressbar
+
 import backend.file_content_module as fcm
 import backend.chunk_process as cpm
 import backend.default_param as dft
@@ -253,9 +255,10 @@ def run(number_core, seg_only, no_seg):
         for i in range(1, nb_of_segment + 1):
             base_name_with_segment = base_name_file + '_S' + str(i)
             working_dir = os.path.join(os.getcwd(), "segment{}".format(i))
-            cpm.lancer_parser_segment(base_name_with_segment, i, working_dir)
+            cpm.lancer_parser_segment(base_name_with_segment, working_dir)
             # ProcessChunk will not start until parser has finished
-            proc = threading.Thread(target=cpm.lancer_process_chunk_segment, args=(base_name_file, i, number_core, working_dir, lambda: stop_threads, lock))
+            proc = threading.Thread(target=cpm.lancer_process_chunk_segment,
+                                    args=(base_name_file, i, number_core, working_dir, lambda: stop_threads, lock))
             all_procs.append(proc)
 
     # Starting all threads
@@ -275,9 +278,14 @@ def run(number_core, seg_only, no_seg):
         # Handle Ctrl+C during the execution of threads
         print("Ctrl+C received. Stopping all processes.")
         stop_threads = True
-        exit(1)
+        try:
+            for proc in all_procs:
+                proc.join()
+            print("All threads are closed")
+        finally:
+            exit(1)
 
-    print("All segments have been generated\n")
+    print("\nAll segments have been generated\n")
     os.chdir("..")
     show_surface = str(input("Would you like to see all iso-surfaces ? y/n\n"))
     if show_surface == "y" or show_surface == "yes":
