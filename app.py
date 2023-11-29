@@ -173,7 +173,7 @@ def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_o
 def run(number_core, seg_only, no_seg, no_cleanup):
     # os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa") # For debugging only
     all_procs = []
-    stop_threads = False
+    stop_threads = threading.Event()
     lock = threading.Lock()
     try:
         path_to_mtv_list = os.path.relpath(glob.glob("*RefP*.csv")[0])
@@ -228,7 +228,7 @@ def run(number_core, seg_only, no_seg, no_cleanup):
         if not stop:
             cpm.lancer_parser(base_name_file)
             proc = threading.Thread(target=cpm.lancer_process_chunk_fullmt,
-                                    args=(base_name_file, number_core, os.getcwd(), lambda: stop_threads, lock))
+                                    args=(base_name_file, number_core, start_wd, stop_threads, lock))
             all_procs.append(proc)
 
     # Preparing segment threads if authorized
@@ -254,8 +254,8 @@ def run(number_core, seg_only, no_seg, no_cleanup):
             cpm.lancer_parser_segment(base_name_with_segment, working_dir)
             # ProcessChunk will not start until parser has finished
             proc = threading.Thread(target=cpm.lancer_process_chunk_segment,
-                                    args=(base_name_file, i, number_core, working_dir, lambda: stop_threads, lock))
-            all_procs.append(proc)
+                                    args=(base_name_file, i, number_core, working_dir, stop_threads, lock))
+            all_procs.insert(0, proc)
 
     # Starting all threads
     for proc in all_procs:
@@ -265,15 +265,16 @@ def run(number_core, seg_only, no_seg, no_cleanup):
     try:
 
         # Wait for all threads to finish
-        print("There is " + str(threading.active_count() - 1) + " parallel threads running for PEET. You can kill them "
-                                                                "using CTRL + C")
+        print("There is " + str(threading.active_count() - 1) +
+              " parallel threads running for PEET. You can kill them using CTRL + C if they reached at least iteration "
+              "3. Otherwise do it manually in by killing processchunks processes.")
         for proc in all_procs:
             proc.join()
     except KeyboardInterrupt:
 
         # Handle Ctrl+C during the execution of threads
-        print("Ctrl+C received. Stopping all processes.")
-        stop_threads = True
+        print("Ctrl+C received. Stopping all processes after they updated at least a chunk. \n\n\n\n\n")
+        stop_threads.set()
         try:
             for proc in all_procs:
                 proc.join()
@@ -282,7 +283,6 @@ def run(number_core, seg_only, no_seg, no_cleanup):
             exit(1)
 
     print("\nAll segments have been generated\nCleanup is starting...")
-    time.sleep(3)  # Waiting because the final average have a ~ for a little while. Increase this value if needed.
     # Cleaning up files
     if not no_cleanup:
 
