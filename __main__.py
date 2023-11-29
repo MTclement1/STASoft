@@ -1,7 +1,6 @@
 # This is a sample Python script.
 # Press ⌃R to execute it or replace it with your code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
-
 import app
 import argparse
 
@@ -14,9 +13,11 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--segments", action="store_true", default=False,
                         help="Assume that the whole MT STA is already generated and only generate segments")
     parser.add_argument("-w", "--whole", action="store_true", default=False, help="Only generate the whole MT")
-    parser.add_argument("-v", "--version", action="version", version='%(prog)s 2.10.2', help="Display version")
+    parser.add_argument("-d", "--no_cleanup", action="store_true", default=False,
+                        help="Do not cleanup folder after finishing")
+    parser.add_argument("-v", "--version", action="version", version='%(prog)s 2.11', help="Display version")
 
     args = parser.parse_args()
-    app.run(args.core, args.segments, args.whole)
+    app.run(args.core, args.segments, args.whole, args.no_cleanup)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

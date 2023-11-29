@@ -1,5 +1,3 @@
-import progressbar
-
 import backend.file_content_module as fcm
 import backend.chunk_process as cpm
 import backend.default_param as dft
@@ -9,11 +7,12 @@ import glob
 import time
 import math
 import threading
+from config import current_wd as start_wd
+
 
 # TODO
 # Graphical interface
 # Possibly using shutil.which and replace all command with their direct path
-
 
 def round_to_even(nombre):
     return round(nombre / 2.0) * 2
@@ -34,9 +33,6 @@ def open_average(path_to_avg):
 def generate_main_mt_prm(ref_lines, base_name, number_cpu, number_of_particle, pixel_size, path_tomo):
     lines_to_change = []
     cpu = math.ceil(number_of_particle / number_cpu)
-    phi = ""
-    sradius = ('searchRadius = {[' + str(round(5 * 8 / pixel_size)) + '],[' + str(round(4 * 8 / pixel_size)) + '],['
-               + str(round(2 * 8 / pixel_size)) + '],[' + str(round(1 * 8 / pixel_size)) + ']}\n')
     choice = int(input("Do you want to add another search angle (for rotations >= 12 °) ?\n"
                        "0 for no \n"
                        "1 for in plane rotation only\n"
@@ -79,7 +75,6 @@ def generate_main_mt_prm(ref_lines, base_name, number_cpu, number_of_particle, p
 
     volume_size = round_to_even(64 * 8.0 / pixel_size)
     number_of_search = len(phi.split(","))
-    tilt_angles = (0, 0)
     if not glob.glob(os.path.dirname(path_tomo) + '/*DualAxisMask.mrc'):
         try:
             tilt_angles = fcm.get_tilt_range(glob.glob(os.path.dirname(path_tomo) + '/*.tlt')[0])
@@ -175,7 +170,7 @@ def generate_segments_prm(lines, base_name, segment_number, number_cpu, number_o
     return lines_to_change
 
 
-def run(number_core, seg_only, no_seg):
+def run(number_core, seg_only, no_seg, no_cleanup):
     # os.chdir("/Volumes/SSD_2To/TestSTASOft/MTa") # For debugging only
     all_procs = []
     stop_threads = False
@@ -198,7 +193,7 @@ def run(number_core, seg_only, no_seg):
 
     # Determine number of segments
     if not no_seg:
-        particle_per_seg = int(input("Enter the minimum particle per segments :\n"))
+        particle_per_seg = int(input("Enter the minimum particle per segments (total = " + total_particle + "):\n"))
         nb_of_segment = math.floor(total_particle / particle_per_seg)
         print("Generating {} segments of at least {} particles.\n".format(nb_of_segment, particle_per_seg))
         cpm.create_segments(nb_of_segment, base_name_file)
@@ -211,7 +206,8 @@ def run(number_core, seg_only, no_seg):
     if ref_lines is None:
         print("{} could not be found, loading default prm...\n".format(prm_path))
         ref_lines = dft.BASE_PRM
-        lines_to_change = generate_main_mt_prm(ref_lines, base_name_file, number_core, total_particle, pixel_spacing, tomo_path)
+        lines_to_change = generate_main_mt_prm(ref_lines, base_name_file, number_core, total_particle, pixel_spacing,
+                                               tomo_path)
         new_prm = modifier_prm(ref_lines, lines_to_change)
         fcm.write_file(prm_path, new_prm)
     else:
@@ -219,8 +215,8 @@ def run(number_core, seg_only, no_seg):
     ref_lines = fcm.open_file(prm_path)  # Now that a prm file exist we can load it
 
     # Preparing mainMT thread if necessary
+    stop = False
     if not seg_only:
-        stop = False
         try:
             _ = glob.glob("{base}_AvgVol_*.mrc".format(base=base_name_file))[-1]
             remake = input("A MT average already exist for the full length, do you want to remake one (with existing "
@@ -254,7 +250,7 @@ def run(number_core, seg_only, no_seg):
         # Averaging
         for i in range(1, nb_of_segment + 1):
             base_name_with_segment = base_name_file + '_S' + str(i)
-            working_dir = os.path.join(os.getcwd(), "segment{}".format(i))
+            working_dir = os.path.join(start_wd, "segment{}".format(i))
             cpm.lancer_parser_segment(base_name_with_segment, working_dir)
             # ProcessChunk will not start until parser has finished
             proc = threading.Thread(target=cpm.lancer_process_chunk_segment,
@@ -269,8 +265,8 @@ def run(number_core, seg_only, no_seg):
     try:
 
         # Wait for all threads to finish
-        print("There is " + str(threading.active_count()-1) + " parallel threads running for PEET. You can kill them "
-                                                              "using CTRl + C")
+        print("There is " + str(threading.active_count() - 1) + " parallel threads running for PEET. You can kill them "
+                                                                "using CTRL + C")
         for proc in all_procs:
             proc.join()
     except KeyboardInterrupt:
@@ -285,8 +281,24 @@ def run(number_core, seg_only, no_seg):
         finally:
             exit(1)
 
-    print("\nAll segments have been generated\n")
-    os.chdir("..")
+    print("\nAll segments have been generated\n Cleanup is starting...")
+
+    # Cleaning up files
+    if not no_cleanup:
+
+        # If whole MT was generated then do it
+        if not seg_only and not stop:
+            print("Cleaning main folder")
+            fcm.cleanup(start_wd, base_name_file)
+
+        # If segments were generated then do it for the segments too
+        if not no_seg:
+            for i in range(1, nb_of_segment + 1):
+                base_name_with_segment = base_name_file + '_S' + str(i)
+                wd = os.path.join(start_wd, "segment{}".format(i))
+                print("Cleaning {} for segment {}".format(wd, i))
+                fcm.cleanup(wd, base_name_with_segment)
+    os.chdir(start_wd)
     show_surface = str(input("Would you like to see all iso-surfaces ? y/n\n"))
     if show_surface == "y" or show_surface == "yes":
         if not seg_only:
@@ -299,3 +311,4 @@ def run(number_core, seg_only, no_seg):
                 open_average(avg_path)
                 time.sleep(1)
         print("All isosurfaces have been opened\n")
+        exit(0)
