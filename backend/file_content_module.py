@@ -114,9 +114,10 @@ def cleanup(wd, base_name, list_del=False):
     Delete most file that are rarely used after averaging
     """
     os.chdir(wd)
+    os.remove("*.*~")
     files_to_keep = ["prmParser.log", f"{base_name}.prm", f"{base_name}_WarningsAndErrors.log", f"{base_name}.mod",
                      os.path.basename(glob.glob("*TotalLog_*")[0]),
-                     os.path.basename(glob.glob("*_AvgVol_*P*.mrc*")[0]),
+                     os.path.basename(glob.glob("*_AvgVol_*P*.mrc*")[-1]),
                      os.path.basename(glob.glob("*_PtsAddedRefP*_initMOTL.csv")[0]),
                      os.path.basename(glob.glob("*_PtsAdded_Twisted.mod")[0])]
     all_files = os.listdir(wd)

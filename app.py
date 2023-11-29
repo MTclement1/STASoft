@@ -281,8 +281,8 @@ def run(number_core, seg_only, no_seg, no_cleanup):
         finally:
             exit(1)
 
-    print("\nAll segments have been generated\n Cleanup is starting...")
-
+    print("\nAll segments have been generated\nCleanup is starting...")
+    time.sleep(3)  # Waiting because the final average have a ~ for a little while. Increase this value if needed.
     # Cleaning up files
     if not no_cleanup:
 
