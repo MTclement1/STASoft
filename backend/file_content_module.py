@@ -90,7 +90,7 @@ def log_file_append(CompletedProcess, log_file_path='./logfile_except_chunks.log
 
     Parameters:
     - CompletedProcess (CompletedProcess): An object returned at the end of subprocess.run command.
-    - log_file_path (str): Path to the log file. Default is 'logfile.log'.
+    - log_file_path (str): Path to the log file. Default is 'logfile_except_chunks.log'.
     """
     # Extract the stdout from the CompletedProcess object
     message = CompletedProcess.stdout.strip()  # Ensure leading/trailing whitespaces are removed

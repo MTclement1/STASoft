@@ -56,7 +56,6 @@ def lancer_parser_segment(base_name_with_segment, working_dir):
     command_parser = "prmParser " + base_name_with_segment + ".prm"
     result = subprocess.run(command_parser.split(" "), stdout=subprocess.PIPE,
                             text=True)  # should be waiting before doing next (independant of shell = True)
-    fcm.log_file_append(result)
     os.chdir("..")
     return True
 
@@ -69,7 +68,6 @@ def lancer_parser(base_name):
     # Parser
     command_parser = "prmParser " + base_name + ".prm"
     result = subprocess.run(command_parser.split(" "), stdout=subprocess.PIPE, text=True)
-    fcm.log_file_append(result)
     return True
 
 
