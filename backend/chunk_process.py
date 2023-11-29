@@ -88,7 +88,7 @@ def lancer_process_chunk_fullmt(base_name: str, number_core, wd, stop, lock):
     os.chdir(wd)
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                             universal_newlines=True, start_new_session=True)  # popen necessary for parallel processing
-    log = open("TotalLog_MainMT.log", 'a')
+    log = open("TotalLog_MainMT.txt", 'a')
     lock.release()
 
     # Setting the progress bar
@@ -145,7 +145,7 @@ def lancer_process_chunk_segment(base_name: str, segment_number: int, number_cor
                             universal_newlines=True, start_new_session=True)  # popen necessary for parallel processing
 
     lock.release()
-    log = open("TotalLog_Segment" + str(segment_number) + ".log", 'a')
+    log = open("TotalLog_Segment" + str(segment_number) + ".txt", 'a')
 
     # Setting the progress bar
     total_pattern = re.compile(r'\d+ of (\d+) done so far', re.IGNORECASE)
