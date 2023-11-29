@@ -97,7 +97,6 @@ def lancer_process_chunk_fullmt(base_name: str, number_core, wd, stop, lock):
                             leave=False)
     try:
         for line in proc.stdout:
-            print("Updating main MT")
             match = total_pattern.search(line)
             done = False
             if match and not done:  # When total chunk in known, total is adapted once
