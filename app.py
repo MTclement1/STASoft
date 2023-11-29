@@ -193,7 +193,7 @@ def run(number_core, seg_only, no_seg, no_cleanup):
 
     # Determine number of segments
     if not no_seg:
-        particle_per_seg = int(input("Enter the minimum particle per segments (total = " + total_particle + "):\n"))
+        particle_per_seg = int(input("Enter the minimum particle per segments (total = " + str(total_particle) + "):\n"))
         nb_of_segment = math.floor(total_particle / particle_per_seg)
         print("Generating {} segments of at least {} particles.\n".format(nb_of_segment, particle_per_seg))
         cpm.create_segments(nb_of_segment, base_name_file)
