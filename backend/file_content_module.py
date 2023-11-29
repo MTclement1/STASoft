@@ -3,6 +3,7 @@ import tkinter as tk
 import os
 from tkinter import filedialog
 import datetime
+import glob
 
 
 def open_file(path):
@@ -84,14 +85,17 @@ def get_tilt_range(path):
     return min_angle, max_angle
 
 
-def log_file_append(message, log_file_path='./logfile_except_chunks.log'):
+def log_file_append(CompletedProcess, log_file_path='./logfile_except_chunks.log'):
     """
     Create a local log file and append log messages to it.
 
     Parameters:
-    - message (str): Log message to be appended.
-    - log_file_path (str): Path to the log file. Default is 'logfile.log'.
+    - CompletedProcess (CompletedProcess): An object returned at the end of subprocess.run command.
+    - log_file_path (str): Path to the log file. Default is 'logfile_except_chunks.log'.
     """
+    # Extract the stdout from the CompletedProcess object
+    message = CompletedProcess.stdout.strip()  # Ensure leading/trailing whitespaces are removed
+
     # Get the current timestamp
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -103,3 +107,34 @@ def log_file_append(message, log_file_path='./logfile_except_chunks.log'):
         # Append the log message to the file
         log_file.write(log_message)
         log_file.close()
+
+
+def cleanup(wd, base_name, list_del=False):
+    """
+    Delete most file that are rarely used after averaging
+    """
+    os.chdir(wd)
+    files_to_keep = ["prmParser.log", f"{base_name}.prm", f"{base_name}_WarningsAndErrors.log", f"{base_name}.mod",
+                     os.path.basename(glob.glob("*TotalLog_*")[0]),
+                     os.path.basename(glob.glob("*_AvgVol_*P*.mrc*")[0]),
+                     os.path.basename(glob.glob("*_PtsAddedRefP*_initMOTL.csv")[0]),
+                     os.path.basename(glob.glob("*_PtsAdded_Twisted.mod")[0])]
+    all_files = os.listdir(wd)
+    deleted_files = []
+    for file in all_files:
+        file_path = os.path.join(wd, file)
+        if file in files_to_keep:
+            continue
+        else:
+            try:
+                os.remove(file_path)
+                deleted_files.append(file)
+            except OSError:
+                pass
+    if list_del:
+
+        with open(os.path.join(wd, "deletedFiles.txt"), 'a') as log:
+            print("Saving the name of deleted files")
+            for file in deleted_files:
+                log.writelines(file)
+                log.write('\n')
