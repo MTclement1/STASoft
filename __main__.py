@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser.add_argument("-w", "--whole", action="store_true", default=False, help="Only generate the whole MT")
     parser.add_argument("-d", "--no_cleanup", action="store_true", default=False,
                         help="Do not cleanup folder after finishing")
-    parser.add_argument("-v", "--version", action="version", version='%(prog)s 2.11.3', help="Display version")
+    parser.add_argument("-v", "--version", action="version", version='%(prog)s 2.12', help="Display version")
 
     args = parser.parse_args()
     app.run(args.core, args.segments, args.whole, args.no_cleanup)

@@ -193,7 +193,8 @@ def run(number_core, seg_only, no_seg, no_cleanup):
 
     # Determine number of segments
     if not no_seg:
-        particle_per_seg = int(input("Enter the minimum particle per segments (total = " + str(total_particle) + "):\n"))
+        particle_per_seg = int(
+            input("Enter the minimum particle per segments (total = " + str(total_particle) + "):\n"))
         nb_of_segment = math.floor(total_particle / particle_per_seg)
         print("Generating {} segments of at least {} particles.\n".format(nb_of_segment, particle_per_seg))
         cpm.create_segments(nb_of_segment, base_name_file)
@@ -273,8 +274,16 @@ def run(number_core, seg_only, no_seg, no_cleanup):
     except KeyboardInterrupt:
 
         # Handle Ctrl+C during the execution of threads
-        print("Ctrl+C received. Stopping all processes after they updated at least a chunk. \n\n\n\n\n")
+        print("Ctrl+C received. Stopping all processes")
         stop_threads.set()
+        with open(start_wd + "/" + base_name_file + ".cmds", 'a') as file:
+            file.write("Q")
+        if not no_seg:
+            for i in range(1, nb_of_segment + 1):
+                base_name_with_segment = base_name_file + '_S' + str(i)
+                working_dir = os.path.join(start_wd, "segment{}".format(i))
+                with open(working_dir + "/" + base_name_with_segment + ".cmds", 'a') as file:
+                    file.write("Q")
         try:
             for proc in all_procs:
                 proc.join()

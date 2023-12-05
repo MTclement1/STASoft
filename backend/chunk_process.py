@@ -14,7 +14,7 @@ def kill_proc_tree(pid, sig=signal.SIGTERM, include_parent=True,
     """Kill a process tree (including grandchildren) with signal
     "sig" and return a (gone, still_alive) tuple.
     "on_terminate", if specified, is a callback function which is
-    called as soon as a child terminates.
+    called as soon as a child terminates. It should not have to be called, but it's here in case.
     """
     assert pid != os.getpid(), "won't kill myself"
     parent = psutil.Process(pid)
@@ -81,7 +81,7 @@ def lancer_process_chunk_fullmt(base_name: str, number_core, wd, stop, lock):
     :return: a pointer to a stream
     """
     # Generate average
-    command_process = "processchunks -n 0 -g -P " + "localhost:" + str(
+    command_process = "processchunks -n 0 -g -P -c " + base_name + ".cmds localhost:" + str(
         number_core) + " " + base_name
     command = command_process.split(" ")
     lock.acquire()
@@ -109,7 +109,10 @@ def lancer_process_chunk_fullmt(base_name: str, number_core, wd, stop, lock):
             else:
                 log.write(line)
             if stop.is_set():
-                raise KeyboardInterrupt
+                log.close()
+                segment_bar.close()
+                return
+
     except KeyboardInterrupt:
         # Handle Ctrl+C gracefully using kill_proc_tree function
         print("Ctrl+C received. Terminating process for main MT.")
@@ -120,6 +123,7 @@ def lancer_process_chunk_fullmt(base_name: str, number_core, wd, stop, lock):
             p.kill()
     finally:
         log.close()
+        segment_bar.close()
         return
 
 
@@ -134,7 +138,7 @@ def lancer_process_chunk_segment(base_name: str, segment_number: int, number_cor
     """
     base_name_with_segment = base_name + '_S' + str(segment_number)
 
-    command_process = "processchunks -n 0 -g -P " + "localhost:" + str(
+    command_process = "processchunks -n 0 -g -P -c " + base_name_with_segment + ".cmds localhost:" + str(
         number_core) + " " + base_name_with_segment  # Number of processor to use for the command.
     command = command_process.split(" ")
 
@@ -166,7 +170,9 @@ def lancer_process_chunk_segment(base_name: str, segment_number: int, number_cor
             else:
                 log.write(line)
             if stop.is_set():
-                raise KeyboardInterrupt
+                segment_bar.close()
+                log.close()
+                return
     except KeyboardInterrupt:
         # Handle Ctrl+C gracefully using kill_proc_tree function
         segment_bar.close()
