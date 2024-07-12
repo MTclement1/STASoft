@@ -126,7 +126,8 @@ def cleanup(wd, base_name, list_del=False):
                      os.path.basename(glob.glob("*TotalLog_*")[0]),
                      os.path.basename(glob.glob("*_AvgVol_*P*.mrc*")[-1]),
                      os.path.basename(glob.glob("*_PtsAddedRefP*_initMOTL.csv")[0]),
-                     os.path.basename(glob.glob("*_PtsAdded_Twisted.mod")[0])]
+                     os.path.basename(glob.glob("*_PtsAdded_Twisted.mod")[0]),
+                     f"{base_name}-finish.log"]
     all_files = os.listdir(wd)
     deleted_files = []
     for file in all_files:

@@ -81,7 +81,7 @@ def lancer_process_chunk_fullmt(base_name: str, number_core, wd, stop, lock):
     :return: a pointer to a stream
     """
     # Generate average
-    command_process = "processchunks -n 0 -g -P -c " + base_name + ".cmds localhost:" + str(
+    command_process = "processchunks -n 18 -g -P -c " + base_name + ".cmds localhost:" + str(
         number_core) + " " + base_name
     command = command_process.split(" ")
     lock.acquire()
@@ -138,7 +138,7 @@ def lancer_process_chunk_segment(base_name: str, segment_number: int, number_cor
     """
     base_name_with_segment = base_name + '_S' + str(segment_number)
 
-    command_process = "processchunks -n 0 -g -P -c " + base_name_with_segment + ".cmds localhost:" + str(
+    command_process = "processchunks -n 18 -g -P -c " + base_name_with_segment + ".cmds localhost:" + str(
         number_core) + " " + base_name_with_segment  # Number of processor to use for the command.
     command = command_process.split(" ")
 
